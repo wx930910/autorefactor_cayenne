@@ -18,57 +18,58 @@
  ****************************************************************/
 package org.apache.cayenne.map;
 
-import org.apache.cayenne.configuration.BaseConfigurationNodeVisitor;
-import org.apache.cayenne.util.XMLEncoder;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import static org.junit.Assert.*;
+import org.apache.cayenne.configuration.BaseConfigurationNodeVisitor;
+import org.apache.cayenne.util.XMLEncoder;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class ObjEntityTest {
 
-    @Test
-    public void testEncodeAsXML() {
-        ObjEntity entity = new ObjEntity("X");
-        entity.setClassName("org.example.Xc");
+	public BaseConfigurationNodeVisitor<Object> mockBaseConfigurationNodeVisitor1() {
+		BaseConfigurationNodeVisitor<Object> mockInstance = Mockito.spy(BaseConfigurationNodeVisitor.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).visitObjAttribute(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).visitObjEntity(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).visitObjRelationship(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-        // intentionally randomize attribute order .. must be saved in alphabetical order by name
-        entity.addAttribute(new ObjAttribute("a2", "java.lang.String", entity));
-        entity.addAttribute(new ObjAttribute("a1", "int", entity));
-        entity.addAttribute(new ObjAttribute("a3", "long", entity));
+	@Test
+	public void testEncodeAsXML() {
+		ObjEntity entity = new ObjEntity("X");
+		entity.setClassName("org.example.Xc");
 
-        // relationships are saved outside the entity, so should be ignored in this test
-        entity.addRelationship(new ObjRelationship("r1"));
+		// intentionally randomize attribute order .. must be saved in alphabetical
+		// order by name
+		entity.addAttribute(new ObjAttribute("a2", "java.lang.String", entity));
+		entity.addAttribute(new ObjAttribute("a1", "int", entity));
+		entity.addAttribute(new ObjAttribute("a3", "long", entity));
 
-        StringWriter out = new StringWriter();
-        XMLEncoder encoder = new XMLEncoder(new PrintWriter(out));
-        entity.encodeAsXML(encoder, new EncoderDummyVisitor());
+		// relationships are saved outside the entity, so should be ignored in this test
+		entity.addRelationship(new ObjRelationship("r1"));
 
-        String ls = System.lineSeparator();
+		StringWriter out = new StringWriter();
+		XMLEncoder encoder = new XMLEncoder(new PrintWriter(out));
+		entity.encodeAsXML(encoder, mockBaseConfigurationNodeVisitor1());
 
-        assertEquals("<obj-entity name=\"X\" className=\"org.example.Xc\">" + ls +
-                "<obj-attribute name=\"a1\" type=\"int\"/>" + ls +
-                "<obj-attribute name=\"a2\" type=\"java.lang.String\"/>" + ls +
-                "<obj-attribute name=\"a3\" type=\"long\"/>" + ls +
-                "</obj-entity>" + ls, out.toString());
-    }
+		String ls = System.lineSeparator();
 
-    private class EncoderDummyVisitor extends BaseConfigurationNodeVisitor<Object> {
-        @Override
-        public Object visitObjEntity(ObjEntity entity) {
-            return null;
-        }
-
-        @Override
-        public Object visitObjAttribute(ObjAttribute attribute) {
-            return null;
-        }
-
-        @Override
-        public Object visitObjRelationship(ObjRelationship relationship) {
-            return null;
-        }
-    }
+		assertEquals("<obj-entity name=\"X\" className=\"org.example.Xc\">" + ls
+				+ "<obj-attribute name=\"a1\" type=\"int\"/>" + ls
+				+ "<obj-attribute name=\"a2\" type=\"java.lang.String\"/>" + ls
+				+ "<obj-attribute name=\"a3\" type=\"long\"/>" + ls + "</obj-entity>" + ls, out.toString());
+	}
 }

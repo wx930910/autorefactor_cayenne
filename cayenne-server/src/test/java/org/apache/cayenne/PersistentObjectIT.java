@@ -19,46 +19,46 @@
 
 package org.apache.cayenne;
 
-import org.apache.cayenne.unit.di.server.CayenneProjects;
-import org.apache.cayenne.unit.di.server.ServerCase;
-import org.apache.cayenne.unit.di.server.UseServerRuntime;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 
+import org.apache.cayenne.unit.di.server.CayenneProjects;
+import org.apache.cayenne.unit.di.server.ServerCase;
+import org.apache.cayenne.unit.di.server.UseServerRuntime;
+import org.junit.Test;
+
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class PersistentObjectIT extends ServerCase {
 
-    @Test
-    public void testObjectContext() {
-        ObjectContext context = mock(ObjectContext.class);
-        PersistentObject object = new MockPersistentObject();
+	@Test
+	public void testObjectContext() {
+		ObjectContext context = mock(ObjectContext.class);
+		PersistentObject object = new MockPersistentObject();
 
-        assertNull(object.getObjectContext());
-        object.setObjectContext(context);
-        assertSame(context, object.getObjectContext());
-    }
+		assertNull(object.getObjectContext());
+		object.setObjectContext(context);
+		assertSame(context, object.getObjectContext());
+	}
 
-    @Test
-    public void testPersistenceState() {
-        PersistentObject object = new MockPersistentObject();
-        assertEquals(PersistenceState.TRANSIENT, object.getPersistenceState());
-        object.setPersistenceState(PersistenceState.DELETED);
-        assertEquals(PersistenceState.DELETED, object.getPersistenceState());
-    }
+	@Test
+	public void testPersistenceState() {
+		PersistentObject object = new MockPersistentObject();
+		assertEquals(PersistenceState.TRANSIENT, object.getPersistenceState());
+		object.setPersistenceState(PersistenceState.DELETED);
+		assertEquals(PersistenceState.DELETED, object.getPersistenceState());
+	}
 
-    @Test
-    public void testObjectID() {
-        ObjectId id = new ObjectId("test");
+	@Test
+	public void testObjectID() {
+		ObjectId id = new ObjectId("test");
 
-        PersistentObject object = new MockPersistentObject();
+		PersistentObject object = new MockPersistentObject();
 
-        assertNull(object.getObjectId());
-        object.setObjectId(id);
-        assertSame(id, object.getObjectId());
-    }
+		assertNull(object.getObjectId());
+		object.setObjectId(id);
+		assertSame(id, object.getObjectId());
+	}
 
 }

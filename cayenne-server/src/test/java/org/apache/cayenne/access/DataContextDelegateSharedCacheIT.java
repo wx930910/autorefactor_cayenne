@@ -19,12 +19,17 @@
 
 package org.apache.cayenne.access;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+
 import java.util.Date;
 
-import org.apache.cayenne.DataObject;
-import org.apache.cayenne.DataRow;
 import org.apache.cayenne.PersistenceState;
 import org.apache.cayenne.di.Inject;
+import org.apache.cayenne.query.Query;
 import org.apache.cayenne.test.parallel.ParallelTestContainer;
 import org.apache.cayenne.testdo.testmap.Artist;
 import org.apache.cayenne.unit.di.server.CayenneProjects;
@@ -32,198 +37,255 @@ import org.apache.cayenne.unit.di.server.ServerCaseContextsSync;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import org.mockito.Mockito;
 
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class DataContextDelegateSharedCacheIT extends ServerCaseContextsSync {
 
-    @Inject
-    private DataContext context;
+	public DataContextDelegate mockDataContextDelegate4(boolean[] methodInvoked) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				methodInvoked[0] = true;
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Inject
-    private DataContext context1;
+	public DataContextDelegate mockDataContextDelegate3() {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    private Artist artist;
+	public DataContextDelegate mockDataContextDelegate2(boolean[] methodInvoked) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				methodInvoked[0] = true;
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Before
-    public void setUp() throws Exception {
+	public DataContextDelegate mockDataContextDelegate1(boolean[] methodInvoked) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				methodInvoked[0] = true;
+				return false;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-        // prepare a single artist record
-        artist = (Artist) context.newObject("Artist");
-        artist.setArtistName("version1");
-        artist.setDateOfBirth(new Date());
-        context.commitChanges();
-    }
+	@Inject
+	private DataContext context;
 
-    /**
-     * Test case to prove that delegate method is invoked on external change of object in
-     * the store.
-     */
-    @Test
-    public void testShouldMergeChanges() throws Exception {
+	@Inject
+	private DataContext context1;
 
-        final boolean[] methodInvoked = new boolean[1];
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+	private Artist artist;
 
-            @Override
-            public boolean shouldMergeChanges(DataObject object, DataRow snapshotInStore) {
-                methodInvoked[0] = true;
-                return true;
-            }
-        };
+	@Before
+	public void setUp() throws Exception {
 
-        // make sure we have a fully resolved copy of an artist object
-        // in the second context
-        Artist altArtist = context1.localObject(artist);
-        assertNotNull(altArtist);
-        assertNotSame(altArtist, artist);
-        assertEquals(artist.getArtistName(), altArtist.getArtistName());
-        assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
+		// prepare a single artist record
+		artist = (Artist) context.newObject("Artist");
+		artist.setArtistName("version1");
+		artist.setDateOfBirth(new Date());
+		context.commitChanges();
+	}
 
-        context1.setDelegate(delegate);
+	/**
+	 * Test case to prove that delegate method is invoked on external change of
+	 * object in the store.
+	 */
+	@Test
+	public void testShouldMergeChanges() throws Exception {
 
-        // Update and save artist in peer context
-        artist.setArtistName("version2");
-        context.commitChanges();
+		final boolean[] methodInvoked = new boolean[1];
+		DataContextDelegate delegate = mockDataContextDelegate4(methodInvoked);
 
-        // assert that delegate was consulted when an object store
-        // was refreshed
-        ParallelTestContainer helper = new ParallelTestContainer() {
+		// make sure we have a fully resolved copy of an artist object
+		// in the second context
+		Artist altArtist = context1.localObject(artist);
+		assertNotNull(altArtist);
+		assertNotSame(altArtist, artist);
+		assertEquals(artist.getArtistName(), altArtist.getArtistName());
+		assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
 
-            @Override
-            protected void assertResult() throws Exception {
-                assertTrue("Delegate was not consulted", methodInvoked[0]);
-            }
-        };
-        helper.runTest(3000);
-    }
+		context1.setDelegate(delegate);
 
-    /**
-     * Test case to prove that delegate method can block changes made by ObjectStore.
-     * 
-     * @throws Exception
-     */
-    @Test
-    public void testBlockedShouldMergeChanges() throws Exception {
-        String oldName = artist.getArtistName();
+		// Update and save artist in peer context
+		artist.setArtistName("version2");
+		context.commitChanges();
 
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+		// assert that delegate was consulted when an object store
+		// was refreshed
+		ParallelTestContainer helper = new ParallelTestContainer() {
 
-            @Override
-            public boolean shouldMergeChanges(DataObject object, DataRow snapshotInStore) {
-                return false;
-            }
-        };
-        context1.setDelegate(delegate);
+			@Override
+			protected void assertResult() throws Exception {
+				assertTrue("Delegate was not consulted", methodInvoked[0]);
+			}
+		};
+		helper.runTest(3000);
+	}
 
-        // make sure we have a fully resolved copy of an artist object
-        // in the second context
-        Artist altArtist = context1.localObject(artist);
-        assertNotNull(altArtist);
-        assertFalse(altArtist == artist);
-        assertEquals(oldName, altArtist.getArtistName());
-        assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
+	/**
+	 * Test case to prove that delegate method can block changes made by
+	 * ObjectStore.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testBlockedShouldMergeChanges() throws Exception {
+		String oldName = artist.getArtistName();
 
-        // Update and save artist in peer context
-        artist.setArtistName("version2");
-        context.commitChanges();
+		DataContextDelegate delegate = mockDataContextDelegate3();
+		context1.setDelegate(delegate);
 
-        // assert that delegate was able to block the merge
-        assertEquals(oldName, altArtist.getArtistName());
-    }
+		// make sure we have a fully resolved copy of an artist object
+		// in the second context
+		Artist altArtist = context1.localObject(artist);
+		assertNotNull(altArtist);
+		assertFalse(altArtist == artist);
+		assertEquals(oldName, altArtist.getArtistName());
+		assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
 
-    /**
-     * Test case to prove that delegate method is invoked on external change of object in
-     * the store.
-     * 
-     * @throws Exception
-     */
-    @Test
-    public void testShouldProcessDeleteOnExternalChange() throws Exception {
+		// Update and save artist in peer context
+		artist.setArtistName("version2");
+		context.commitChanges();
 
-        final boolean[] methodInvoked = new boolean[1];
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+		// assert that delegate was able to block the merge
+		assertEquals(oldName, altArtist.getArtistName());
+	}
 
-            @Override
-            public boolean shouldProcessDelete(DataObject object) {
-                methodInvoked[0] = true;
-                return true;
-            }
-        };
-        context1.setDelegate(delegate);
+	/**
+	 * Test case to prove that delegate method is invoked on external change of
+	 * object in the store.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testShouldProcessDeleteOnExternalChange() throws Exception {
 
-        // make sure we have a fully resolved copy of an artist object
-        // in the second context
-        Artist altArtist = context1.localObject(artist);
-        assertNotNull(altArtist);
-        assertFalse(altArtist == artist);
-        assertEquals(artist.getArtistName(), altArtist.getArtistName());
-        assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
+		final boolean[] methodInvoked = new boolean[1];
+		DataContextDelegate delegate = mockDataContextDelegate2(methodInvoked);
+		context1.setDelegate(delegate);
 
-        // Update and save artist in peer context
-        context.deleteObjects(artist);
-        context.commitChanges();
+		// make sure we have a fully resolved copy of an artist object
+		// in the second context
+		Artist altArtist = context1.localObject(artist);
+		assertNotNull(altArtist);
+		assertFalse(altArtist == artist);
+		assertEquals(artist.getArtistName(), altArtist.getArtistName());
+		assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
 
-        // assert that delegate was consulted when an object store
-        // was refreshed
-        ParallelTestContainer helper = new ParallelTestContainer() {
+		// Update and save artist in peer context
+		context.deleteObjects(artist);
+		context.commitChanges();
 
-            @Override
-            protected void assertResult() throws Exception {
-                assertTrue("Delegate was not consulted", methodInvoked[0]);
-            }
-        };
-        helper.runTest(3000);
-    }
+		// assert that delegate was consulted when an object store
+		// was refreshed
+		ParallelTestContainer helper = new ParallelTestContainer() {
 
-    /**
-     * Test case to prove that delegate method is invoked on external change of object in
-     * the store, and is able to block further object processing.
-     * 
-     * @throws Exception
-     */
-    @Test
-    public void testBlockShouldProcessDeleteOnExternalChange() throws Exception {
+			@Override
+			protected void assertResult() throws Exception {
+				assertTrue("Delegate was not consulted", methodInvoked[0]);
+			}
+		};
+		helper.runTest(3000);
+	}
 
-        final boolean[] methodInvoked = new boolean[1];
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+	/**
+	 * Test case to prove that delegate method is invoked on external change of
+	 * object in the store, and is able to block further object processing.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testBlockShouldProcessDeleteOnExternalChange() throws Exception {
 
-            @Override
-            public boolean shouldProcessDelete(DataObject object) {
-                methodInvoked[0] = true;
-                return false;
-            }
-        };
-        context1.setDelegate(delegate);
+		final boolean[] methodInvoked = new boolean[1];
+		DataContextDelegate delegate = mockDataContextDelegate1(methodInvoked);
+		context1.setDelegate(delegate);
 
-        // make sure we have a fully resolved copy of an artist object
-        // in the second context
-        Artist altArtist = context1.localObject(artist);
-        assertNotNull(altArtist);
-        assertFalse(altArtist == artist);
-        assertEquals(artist.getArtistName(), altArtist.getArtistName());
-        assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
+		// make sure we have a fully resolved copy of an artist object
+		// in the second context
+		Artist altArtist = context1.localObject(artist);
+		assertNotNull(altArtist);
+		assertFalse(altArtist == artist);
+		assertEquals(artist.getArtistName(), altArtist.getArtistName());
+		assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
 
-        // Update and save artist in peer context
-        context.deleteObjects(artist);
-        context.commitChanges();
+		// Update and save artist in peer context
+		context.deleteObjects(artist);
+		context.commitChanges();
 
-        // assert that delegate was consulted when an object store
-        // was refreshed, and actually blocked object expulsion
-        ParallelTestContainer helper = new ParallelTestContainer() {
+		// assert that delegate was consulted when an object store
+		// was refreshed, and actually blocked object expulsion
+		ParallelTestContainer helper = new ParallelTestContainer() {
 
-            @Override
-            protected void assertResult() throws Exception {
-                assertTrue("Delegate was not consulted", methodInvoked[0]);
-            }
-        };
-        helper.runTest(3000);
-        assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
-        assertNotNull(altArtist.getObjectContext());
-    }
+			@Override
+			protected void assertResult() throws Exception {
+				assertTrue("Delegate was not consulted", methodInvoked[0]);
+			}
+		};
+		helper.runTest(3000);
+		assertEquals(PersistenceState.COMMITTED, altArtist.getPersistenceState());
+		assertNotNull(altArtist.getObjectContext());
+	}
 }

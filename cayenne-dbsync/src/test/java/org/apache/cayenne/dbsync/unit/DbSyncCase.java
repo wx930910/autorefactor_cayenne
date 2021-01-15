@@ -28,30 +28,27 @@ import org.apache.cayenne.unit.di.server.SchemaBuilder;
 import org.apache.cayenne.unit.di.server.ServerCaseModule;
 import org.junit.Before;
 
-
 public class DbSyncCase extends DICase {
 
-    private static final Injector injector;
+	private static final Injector injector;
 
-    static {
-        DefaultScope testScope = new DefaultScope();
-        injector = DIBootstrap.createInjector(
-                new ServerCaseModule(testScope),
-                new DbSyncCaseModule(testScope));
+	static {
+		DefaultScope testScope = new DefaultScope();
+		injector = DIBootstrap.createInjector(new ServerCaseModule(testScope), DbSyncCaseModule.mockModule1(testScope));
 
-        injector.getInstance(SchemaBuilder.class).rebuildSchema();
-    }
+		injector.getInstance(SchemaBuilder.class).rebuildSchema();
+	}
 
-    @Inject
-    private DBCleaner dbCleaner;
+	@Inject
+	private DBCleaner dbCleaner;
 
-    @Before
-    public void cleanUpDB() throws Exception {
-        dbCleaner.clean();
-    }
+	@Before
+	public void cleanUpDB() throws Exception {
+		dbCleaner.clean();
+	}
 
-    @Override
-    protected Injector getUnitTestInjector() {
-        return injector;
-    }
+	@Override
+	protected Injector getUnitTestInjector() {
+		return injector;
+	}
 }

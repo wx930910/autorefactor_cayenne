@@ -19,46 +19,42 @@
 
 package org.apache.cayenne.modeler.event;
 
-import org.apache.cayenne.map.event.MapEvent;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+
+import org.apache.cayenne.map.event.MapEvent;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  */
 public class ModelerEventTest {
 
-    @Test
-    public void testConstructor1() throws Exception {
-    	Object src = new Object();
-    	MapEvent e = new TestMapEvent(src);
-    	assertSame(src, e.getSource());
-    }
+	public MapEvent mockMapEvent1(Object source) {
+		MapEvent mockInstance = Mockito.mock(MapEvent.class,
+				Mockito.withSettings().useConstructor(source).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return "";
+			}).when(mockInstance).getNewName();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Test
-    public void testId() throws Exception  {
-    	MapEvent e = new TestMapEvent(new Object());
-    	assertEquals(MapEvent.CHANGE, e.getId());
-    	
-    	e.setId(MapEvent.ADD);
-    	assertEquals(MapEvent.ADD, e.getId());
-    }
-    
-    class TestMapEvent extends MapEvent {
-        public TestMapEvent(Object source) {
-            super(source);
-            // TODO Auto-generated constructor stub
-        }
+	@Test
+	public void testConstructor1() throws Exception {
+		Object src = new Object();
+		MapEvent e = mockMapEvent1(src);
+		assertSame(src, e.getSource());
+	}
 
-        public TestMapEvent(Object source, String oldName) {
-            super(source, oldName);
-            // TODO Auto-generated constructor stub
-        }
+	@Test
+	public void testId() throws Exception {
+		MapEvent e = mockMapEvent1(new Object());
+		assertEquals(MapEvent.CHANGE, e.getId());
 
-    	public String getNewName() {
-    		return "";
-    	}
-    }
+		e.setId(MapEvent.ADD);
+		assertEquals(MapEvent.ADD, e.getId());
+	}
 }
-

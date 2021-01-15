@@ -18,6 +18,15 @@
  ****************************************************************/
 package org.apache.cayenne.remote;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.cayenne.CayenneContext;
 import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ObjectId;
@@ -36,239 +45,185 @@ import org.apache.cayenne.unit.di.server.CayenneProjects;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 @UseServerRuntime(CayenneProjects.MULTI_TIER_PROJECT)
 public class ClientChannelServerDiffsIT extends ClientCase {
 
-    @Inject
-    private ClientServerChannel clientServerChannel;
+	@Inject
+	private ClientServerChannel clientServerChannel;
 
-    @Inject
-    private ClientConnection connection;
+	@Inject
+	private ClientConnection connection;
 
-    @Test
-    public void testReturnIdDiff() {
+	@Test
+	public void testReturnIdDiff() {
 
-        final Object[] ids = new Object[2];
+		final Object[] ids = new Object[2];
 
-        final GraphChangeHandler diffReader = new NoopGraphChangeHandler() {
+		final GraphChangeHandler diffReader = new NoopGraphChangeHandler() {
 
-            @Override
-            public void nodeIdChanged(Object oldId, Object newId) {
-                ids[0] = oldId;
-                ids[1] = newId;
-            }
-        };
+			@Override
+			public void nodeIdChanged(Object oldId, Object newId) {
+				ids[0] = oldId;
+				ids[1] = newId;
+			}
+		};
 
-        ClientChannel channel = new ClientChannel(
-                connection,
-                false,
-                new MockEventManager(),
-                false) {
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false) {
 
-            @Override
-            public GraphDiff onSync(
-                    ObjectContext originatingContext,
-                    GraphDiff changes,
-                    int syncType) {
+			@Override
+			public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
 
-                GraphDiff serverDiff = super
-                        .onSync(originatingContext, changes, syncType);
+				GraphDiff serverDiff = super.onSync(originatingContext, changes, syncType);
 
-                assertNotNull(serverDiff);
-                serverDiff.apply(diffReader);
-                return serverDiff;
-            }
-        };
+				assertNotNull(serverDiff);
+				serverDiff.apply(diffReader);
+				return serverDiff;
+			}
+		};
 
-        CayenneContext context = new CayenneContext(channel);
-        context.newObject(ClientMtTable1.class);
-        context.commitChanges();
+		CayenneContext context = new CayenneContext(channel);
+		context.newObject(ClientMtTable1.class);
+		context.commitChanges();
 
-        assertTrue(ids[0] instanceof ObjectId);
-        assertTrue(((ObjectId) ids[0]).isTemporary());
+		assertTrue(ids[0] instanceof ObjectId);
+		assertTrue(((ObjectId) ids[0]).isTemporary());
 
-        assertTrue(ids[1] instanceof ObjectId);
-        assertFalse(((ObjectId) ids[1]).isTemporary());
-    }
+		assertTrue(ids[1] instanceof ObjectId);
+		assertFalse(((ObjectId) ids[1]).isTemporary());
+	}
 
-    @Test
-    public void testReturnDiffInPrePersist() {
+	@Test
+	public void testReturnDiffInPrePersist() {
 
-        final List<GenericDiff> diffs = new ArrayList<GenericDiff>();
-        final NoopGraphChangeHandler diffReader = new NoopGraphChangeHandler() {
+		final List<GenericDiff> diffs = new ArrayList<GenericDiff>();
+		final NoopGraphChangeHandler diffReader = new NoopGraphChangeHandler() {
 
-            @Override
-            public void nodePropertyChanged(
-                    Object nodeId,
-                    String property,
-                    Object oldValue,
-                    Object newValue) {
+			@Override
+			public void nodePropertyChanged(Object nodeId, String property, Object oldValue, Object newValue) {
 
-                super.nodePropertyChanged(nodeId, property, oldValue, newValue);
-                diffs
-                        .add(new GenericDiff(
-                                (ObjectId) nodeId,
-                                property,
-                                oldValue,
-                                newValue));
-            }
+				super.nodePropertyChanged(nodeId, property, oldValue, newValue);
+				diffs.add(new GenericDiff((ObjectId) nodeId, property, oldValue, newValue));
+			}
 
-        };
+		};
 
-        LifecycleCallbackRegistry callbackRegistry = clientServerChannel
-                .getEntityResolver()
-                .getCallbackRegistry();
+		LifecycleCallbackRegistry callbackRegistry = clientServerChannel.getEntityResolver().getCallbackRegistry();
 
-        try {
+		try {
 
-            callbackRegistry.addListener(
-                    LifecycleEvent.POST_ADD,
-                    MtTable1.class,
-                    new ClientChannelServerDiffsListener1(),
-                    "prePersist");
+			callbackRegistry.addListener(LifecycleEvent.POST_ADD, MtTable1.class,
+					new ClientChannelServerDiffsListener1(), "prePersist");
 
-            ClientChannel channel = new ClientChannel(
-                    connection,
-                    false,
-                    new MockEventManager(),
-                    false) {
+			ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false) {
 
-                @Override
-                public GraphDiff onSync(
-                        ObjectContext originatingContext,
-                        GraphDiff changes,
-                        int syncType) {
+				@Override
+				public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
 
-                    GraphDiff serverDiff = super.onSync(
-                            originatingContext,
-                            changes,
-                            syncType);
+					GraphDiff serverDiff = super.onSync(originatingContext, changes, syncType);
 
-                    assertNotNull(serverDiff);
-                    serverDiff.apply(diffReader);
-                    return serverDiff;
-                }
-            };
+					assertNotNull(serverDiff);
+					serverDiff.apply(diffReader);
+					return serverDiff;
+				}
+			};
 
-            CayenneContext context = new CayenneContext(channel);
-            ClientMtTable1 o = context.newObject(ClientMtTable1.class);
-            ObjectId tempId = o.getObjectId();
-            o.setServerAttribute1("YY");
-            context.commitChanges();
+			CayenneContext context = new CayenneContext(channel);
+			ClientMtTable1 o = context.newObject(ClientMtTable1.class);
+			ObjectId tempId = o.getObjectId();
+			o.setServerAttribute1("YY");
+			context.commitChanges();
 
-            assertEquals(2, diffReader.size);
-            assertEquals(1, diffs.size());
-            assertEquals(tempId, diffs.get(0).sourceId);
-            assertEquals(ClientMtTable1.GLOBAL_ATTRIBUTE1_PROPERTY, diffs.get(0).property);
-            assertNull(diffs.get(0).oldValue);
-            assertEquals("XXX", diffs.get(0).newValue);
-        }
-        finally {
-            callbackRegistry.clear();
-        }
-    }
+			assertEquals(2, diffReader.size);
+			assertEquals(1, diffs.size());
+			assertEquals(tempId, diffs.get(0).sourceId);
+			assertEquals(ClientMtTable1.GLOBAL_ATTRIBUTE1_PROPERTY, diffs.get(0).property);
+			assertNull(diffs.get(0).oldValue);
+			assertEquals("XXX", diffs.get(0).newValue);
+		} finally {
+			callbackRegistry.clear();
+		}
+	}
 
-    @Test
-    public void testReturnDiffClientArcChanges() {
+	@Test
+	public void testReturnDiffClientArcChanges() {
 
-        final NoopGraphChangeHandler diffReader = new NoopGraphChangeHandler();
+		final NoopGraphChangeHandler diffReader = new NoopGraphChangeHandler();
 
-        ClientChannel channel = new ClientChannel(
-                connection,
-                false,
-                new MockEventManager(),
-                false) {
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false) {
 
-            @Override
-            public GraphDiff onSync(
-                    ObjectContext originatingContext,
-                    GraphDiff changes,
-                    int syncType) {
+			@Override
+			public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
 
-                GraphDiff serverDiff = super
-                        .onSync(originatingContext, changes, syncType);
+				GraphDiff serverDiff = super.onSync(originatingContext, changes, syncType);
 
-                assertNotNull(serverDiff);
-                serverDiff.apply(diffReader);
-                return serverDiff;
-            }
-        };
+				assertNotNull(serverDiff);
+				serverDiff.apply(diffReader);
+				return serverDiff;
+			}
+		};
 
-        CayenneContext context = new CayenneContext(channel);
-        ClientMtTable1 o = context.newObject(ClientMtTable1.class);
-        ClientMtTable2 o2 = context.newObject(ClientMtTable2.class);
-        o.addToTable2Array(o2);
-        context.commitChanges();
+		CayenneContext context = new CayenneContext(channel);
+		ClientMtTable1 o = context.newObject(ClientMtTable1.class);
+		ClientMtTable2 o2 = context.newObject(ClientMtTable2.class);
+		o.addToTable2Array(o2);
+		context.commitChanges();
 
-        assertEquals(2, diffReader.size);
+		assertEquals(2, diffReader.size);
 
-        diffReader.reset();
+		diffReader.reset();
 
-        ClientMtTable2 o3 = context.newObject(ClientMtTable2.class);
-        o3.setTable1(o);
-        context.commitChanges();
-        assertEquals(1, diffReader.size);
-    }
+		ClientMtTable2 o3 = context.newObject(ClientMtTable2.class);
+		o3.setTable1(o);
+		context.commitChanges();
+		assertEquals(1, diffReader.size);
+	}
 
-    class NoopGraphChangeHandler implements GraphChangeHandler {
+	class NoopGraphChangeHandler implements GraphChangeHandler {
 
-        int size;
+		int size;
 
-        void reset() {
-            size = 0;
-        }
+		void reset() {
+			size = 0;
+		}
 
-        public void nodePropertyChanged(
-                Object nodeId,
-                String property,
-                Object oldValue,
-                Object newValue) {
+		public void nodePropertyChanged(Object nodeId, String property, Object oldValue, Object newValue) {
 
-            size++;
-        }
+			size++;
+		}
 
-        public void arcCreated(Object nodeId, Object targetNodeId, Object arcId) {
-            size++;
-        }
+		public void arcCreated(Object nodeId, Object targetNodeId, Object arcId) {
+			size++;
+		}
 
-        public void arcDeleted(Object nodeId, Object targetNodeId, Object arcId) {
-            size++;
-        }
+		public void arcDeleted(Object nodeId, Object targetNodeId, Object arcId) {
+			size++;
+		}
 
-        public void nodeCreated(Object nodeId) {
-            size++;
-        }
+		public void nodeCreated(Object nodeId) {
+			size++;
+		}
 
-        public void nodeIdChanged(Object nodeId, Object newId) {
-            size++;
-        }
+		public void nodeIdChanged(Object nodeId, Object newId) {
+			size++;
+		}
 
-        public void nodeRemoved(Object nodeId) {
-            size++;
-        }
-    }
+		public void nodeRemoved(Object nodeId) {
+			size++;
+		}
+	}
 
-    class GenericDiff {
+	class GenericDiff {
 
-        private String property;
-        private Object oldValue;
-        private Object newValue;
-        private ObjectId sourceId;
+		private String property;
+		private Object oldValue;
+		private Object newValue;
+		private ObjectId sourceId;
 
-        GenericDiff(ObjectId sourceId, String property, Object oldValue, Object newValue) {
-            this.sourceId = sourceId;
-            this.property = property;
-            this.oldValue = oldValue;
-            this.newValue = newValue;
-        }
-    }
+		GenericDiff(ObjectId sourceId, String property, Object oldValue, Object newValue) {
+			this.sourceId = sourceId;
+			this.property = property;
+			this.oldValue = oldValue;
+			this.newValue = newValue;
+		}
+	}
 }

@@ -19,100 +19,54 @@
 
 package org.apache.cayenne.query;
 
-import java.util.List;
-import java.util.Map;
+import org.mockito.Mockito;
 
-import org.apache.cayenne.map.DataMap;
-import org.apache.cayenne.map.DbEntity;
-import org.apache.cayenne.map.ObjEntity;
-import org.apache.cayenne.map.Procedure;
-import org.apache.cayenne.reflect.ClassDescriptor;
+public class MockQueryMetadata {
 
-public class MockQueryMetadata implements QueryMetadata {
-
-	public List<Object> getResultSetMapping() {
-		return null;
-	}
-
-	@Override
-	public boolean isSingleResultSetMapping() {
-		return false;
-	}
-
-	public ObjEntity getObjEntity() {
-		return null;
-	}
-
-	public DbEntity getDbEntity() {
-		return null;
-	}
-
-	public Procedure getProcedure() {
-		return null;
-	}
-
-	public Map<String, String> getPathSplitAliases() {
-		return null;
-	}
-
-	public DataMap getDataMap() {
-		return null;
-	}
-
-	public QueryCacheStrategy getCacheStrategy() {
-		return null;
-	}
-
-	public String getCacheKey() {
-		return null;
-	}
-
-	public String getCacheGroup() {
-		return null;
-	}
-
-	public ClassDescriptor getClassDescriptor() {
-		return null;
-	}
-
-	public boolean isFetchingDataRows() {
-		return false;
-	}
-
-	public boolean isRefreshingObjects() {
-		return false;
-	}
-
-	public boolean isResolvingInherited() {
-		return false;
-	}
-
-	public int getPageSize() {
-		return 0;
-	}
-
-	public int getFetchOffset() {
-		return -1;
-	}
-
-	public int getFetchLimit() {
-		return 0;
-	}
-
-	public PrefetchTreeNode getPrefetchTree() {
-		return null;
-	}
-
-	public Query getOriginatingQuery() {
-		return null;
-	}
-
-	public int getStatementFetchSize() {
-		return 0;
-	}
-
-	@Override
-	public boolean isSuppressingDistinct() {
-		return false;
+	static public QueryMetadata mockQueryMetadata1() {
+		QueryMetadata mockInstance = Mockito.spy(QueryMetadata.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getResultSetMapping();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getPathSplitAliases();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheGroup();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getClassDescriptor();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getDbEntity();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getObjEntity();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getProcedure();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getPrefetchTree();
+			Mockito.doAnswer((stubInvo) -> {
+				return -1;
+			}).when(mockInstance).getFetchOffset();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getOriginatingQuery();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheStrategy();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheKey();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getDataMap();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
 	}
 }

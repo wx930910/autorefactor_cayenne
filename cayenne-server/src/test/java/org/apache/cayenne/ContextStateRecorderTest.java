@@ -61,7 +61,7 @@ public class ContextStateRecorderTest {
 		MockPersistentObject modified = new MockPersistentObject();
 		modified.setObjectId(new ObjectId("MockPersistentObject", "key", "value1"));
 		modified.setPersistenceState(PersistenceState.MODIFIED);
-		
+
 		when(mockGraphManager.getNode(modified.getObjectId())).thenReturn(modified);
 		recorder.nodePropertyChanged(modified.getObjectId(), "a", "b", "c");
 

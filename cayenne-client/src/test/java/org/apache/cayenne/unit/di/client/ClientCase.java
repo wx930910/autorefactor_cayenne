@@ -30,30 +30,28 @@ import org.junit.Before;
 
 public class ClientCase extends DICase {
 
-    public static final String ROP_CLIENT_KEY = "client";
+	public static final String ROP_CLIENT_KEY = "client";
 
-    private static final Injector injector;
+	private static final Injector injector;
 
-    @Inject
-    private DBCleaner dbCleaner;
+	@Inject
+	private DBCleaner dbCleaner;
 
-    static {
-        DefaultScope testScope = new DefaultScope();
-        injector = DIBootstrap.createInjector(
-                new ServerCaseModule(testScope),
-                new ClientCaseModule(testScope));
+	static {
+		DefaultScope testScope = new DefaultScope();
+		injector = DIBootstrap.createInjector(new ServerCaseModule(testScope), ClientCaseModule.mockModule1(testScope));
 
-        injector.getInstance(SchemaBuilder.class).rebuildSchema();
-    }
+		injector.getInstance(SchemaBuilder.class).rebuildSchema();
+	}
 
-    @Before
-    public void cleanUpDB() throws Exception {
-        dbCleaner.clean();
-    }
+	@Before
+	public void cleanUpDB() throws Exception {
+		dbCleaner.clean();
+	}
 
-    @Override
-    protected Injector getUnitTestInjector() {
-        return injector;
-    }
+	@Override
+	protected Injector getUnitTestInjector() {
+		return injector;
+	}
 
 }

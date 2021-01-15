@@ -22,6 +22,11 @@ package org.apache.cayenne.query;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.cayenne.access.MockQueryEngine;
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.exp.ExpressionFactory;
 import org.apache.cayenne.map.EntityResolver;
@@ -33,6 +38,7 @@ import org.apache.cayenne.unit.di.server.CayenneProjects;
 import org.apache.cayenne.unit.di.server.ServerCase;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class SelectQueryPrefetchRouterActionIT extends ServerCase {
@@ -48,11 +54,26 @@ public class SelectQueryPrefetchRouterActionIT extends ServerCase {
 
 		SelectQueryPrefetchRouterAction action = new SelectQueryPrefetchRouterAction();
 
-		MockQueryRouter router = new MockQueryRouter();
+		QueryRouter router = Mockito.spy(QueryRouter.class);
+		List[] routerQueries = new List[] { new ArrayList() };
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForDataMap(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForName(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				routerQueries[0].add(query);
+				return null;
+			}).when(router).route(Mockito.any(), Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
 		action.route(q, router, resolver);
-		assertEquals(1, router.getQueryCount());
+		assertEquals(1, routerQueries[0].size());
 
-		PrefetchSelectQuery prefetch = (PrefetchSelectQuery) router.getQueries().get(0);
+		PrefetchSelectQuery prefetch = (PrefetchSelectQuery) Collections.unmodifiableList(routerQueries[0]).get(0);
 
 		assertSame(paintingEntity, prefetch.getRoot());
 		assertEquals(ExpressionFactory.exp("db:toArtist.ARTIST_NAME = 'abc'"), prefetch.getQualifier());
@@ -68,11 +89,26 @@ public class SelectQueryPrefetchRouterActionIT extends ServerCase {
 
 		SelectQueryPrefetchRouterAction action = new SelectQueryPrefetchRouterAction();
 
-		MockQueryRouter router = new MockQueryRouter();
+		QueryRouter router = Mockito.spy(QueryRouter.class);
+		List[] routerQueries = new List[] { new ArrayList() };
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForDataMap(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForName(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				routerQueries[0].add(query);
+				return null;
+			}).when(router).route(Mockito.any(), Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
 		action.route(q, router, resolver);
-		assertEquals(1, router.getQueryCount());
+		assertEquals(1, routerQueries[0].size());
 
-		PrefetchSelectQuery prefetch = (PrefetchSelectQuery) router.getQueries().get(0);
+		PrefetchSelectQuery prefetch = (PrefetchSelectQuery) Collections.unmodifiableList(routerQueries[0]).get(0);
 		assertSame(paintingEntity, prefetch.getRoot());
 		assertEquals(ExpressionFactory.exp("db:toArtist.ARTIST_NAME = 'abc' or db:toArtist.ARTIST_NAME = 'xyz'"),
 				prefetch.getQualifier());
@@ -86,11 +122,26 @@ public class SelectQueryPrefetchRouterActionIT extends ServerCase {
 
 		SelectQueryPrefetchRouterAction action = new SelectQueryPrefetchRouterAction();
 
-		MockQueryRouter router = new MockQueryRouter();
+		QueryRouter router = Mockito.spy(QueryRouter.class);
+		List[] routerQueries = new List[] { new ArrayList() };
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForDataMap(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForName(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				routerQueries[0].add(query);
+				return null;
+			}).when(router).route(Mockito.any(), Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
 		action.route(q, router, resolver);
-		assertEquals(1, router.getQueryCount());
+		assertEquals(1, routerQueries[0].size());
 
-		PrefetchSelectQuery prefetch = (PrefetchSelectQuery) router.getQueries().get(0);
+		PrefetchSelectQuery prefetch = (PrefetchSelectQuery) Collections.unmodifiableList(routerQueries[0]).get(0);
 
 		assertSame(galleryEntity, prefetch.getRoot());
 		assertEquals(ExpressionFactory.exp("db:paintingArray.toArtist.ARTIST_NAME = 'abc'"), prefetch.getQualifier());

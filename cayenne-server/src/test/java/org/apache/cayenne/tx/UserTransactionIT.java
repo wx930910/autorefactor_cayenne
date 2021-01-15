@@ -21,10 +21,6 @@ package org.apache.cayenne.tx;
 
 import static org.junit.Assert.assertEquals;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Map;
-
 import javax.sql.DataSource;
 
 import org.apache.cayenne.ObjectContext;
@@ -35,6 +31,7 @@ import org.apache.cayenne.unit.di.server.CayenneProjects;
 import org.apache.cayenne.unit.di.server.ServerCase;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class UserTransactionIT extends ServerCase {
@@ -51,7 +48,44 @@ public class UserTransactionIT extends ServerCase {
 		Artist a = context.newObject(Artist.class);
 		a.setArtistName("AAA");
 
-		TxWrapper t = new TxWrapper(new CayenneTransaction(logger));
+		Transaction t = Mockito.spy(Transaction.class);
+		Transaction[] tDelegate = new Transaction[1];
+		tDelegate[0] = new CayenneTransaction(logger);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				tDelegate[0].rollback();
+				return null;
+			}).when(t).rollback();
+			Mockito.doAnswer((stubInvo) -> {
+				tDelegate[0].setRollbackOnly();
+				return null;
+			}).when(t).setRollbackOnly();
+			Mockito.doAnswer((stubInvo) -> {
+				TransactionListener listener = stubInvo.getArgument(0);
+				tDelegate[0].addListener(listener);
+				return null;
+			}).when(t).addListener(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				tDelegate[0].commit();
+				return null;
+			}).when(t).commit();
+			Mockito.doAnswer((stubInvo) -> {
+				tDelegate[0].begin();
+				return null;
+			}).when(t).begin();
+			Mockito.doAnswer((stubInvo) -> {
+				return tDelegate[0].getConnections();
+			}).when(t).getConnections();
+			Mockito.doAnswer((stubInvo) -> {
+				return tDelegate[0].isRollbackOnly();
+			}).when(t).isRollbackOnly();
+			Mockito.doAnswer((stubInvo) -> {
+				String connectionName = stubInvo.getArgument(0);
+				DataSource dataSource = stubInvo.getArgument(1);
+				return tDelegate[0].getOrCreateConnection(connectionName, dataSource);
+			}).when(t).getOrCreateConnection(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
 		BaseTransaction.bindThreadTransaction(t);
 
 		try {
@@ -61,59 +95,8 @@ public class UserTransactionIT extends ServerCase {
 			BaseTransaction.bindThreadTransaction(null);
 		}
 
-		assertEquals(0, t.commitCount);
+		Mockito.verify(t, Mockito.times(0)).commit();
 		assertEquals(1, t.getConnections().size());
-	}
-
-	class TxWrapper implements Transaction {
-
-		int commitCount;
-		private Transaction delegate;
-
-		TxWrapper(Transaction delegate) {
-			this.delegate = delegate;
-		}
-
-		public void begin() {
-			delegate.begin();
-		}
-
-		public void commit() {
-			commitCount++;
-			delegate.commit();
-		}
-
-		public void rollback() {
-			delegate.rollback();
-		}
-
-		public void setRollbackOnly() {
-			delegate.setRollbackOnly();
-		}
-
-		public boolean isRollbackOnly() {
-			return delegate.isRollbackOnly();
-		}
-
-		@Override
-		public Connection getOrCreateConnection(String connectionName, DataSource dataSource) throws SQLException {
-			return delegate.getOrCreateConnection(connectionName, dataSource);
-		}
-
-		@Override
-		public Map<String, Connection> getConnections() {
-			return delegate.getConnections();
-		}
-
-		@Override
-		public void addListener(TransactionListener listener) {
-			delegate.addListener(listener);
-		}
-
-		@Override
-		public boolean isExternal() {
-			return false;
-		}
 	}
 
 }

@@ -17,54 +17,52 @@
  *  under the License.
  ****************************************************************/
 
-
 package org.apache.cayenne.query;
-
-import org.apache.cayenne.map.ObjEntity;
-import org.apache.cayenne.testdo.testmap.Artist;
-import org.junit.Test;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
+import org.apache.cayenne.map.ObjEntity;
+import org.apache.cayenne.testdo.testmap.Artist;
+import org.junit.Test;
+
 public class AbstractQueryTest {
 
-    @Test
-    public void testSetRootEntityName() {
-        AbstractQuery query = new MockAbstractQuery();
-        assertNull(query.getRoot());
-        query.setRoot("SomeEntity");
-        assertSame("SomeEntity", query.getRoot());
-    }
+	@Test
+	public void testSetRootEntityName() {
+		AbstractQuery query = MockAbstractQuery.mockAbstractQuery1();
+		assertNull(query.getRoot());
+		query.setRoot("SomeEntity");
+		assertSame("SomeEntity", query.getRoot());
+	}
 
-    @Test
-    public void testSetRootObjEntity() {
-        AbstractQuery query = new MockAbstractQuery();
+	@Test
+	public void testSetRootObjEntity() {
+		AbstractQuery query = MockAbstractQuery.mockAbstractQuery1();
 
-        assertNull(query.getRoot());
-        ObjEntity e = new ObjEntity("ABC");
-        query.setRoot(e);
-        assertSame(e, query.getRoot());
-    }
+		assertNull(query.getRoot());
+		ObjEntity e = new ObjEntity("ABC");
+		query.setRoot(e);
+		assertSame(e, query.getRoot());
+	}
 
-    @Test
-    public void testSetRootClass() {
-        AbstractQuery query = new MockAbstractQuery();
-        assertNull(query.getRoot());
-        query.setRoot(Artist.class);
-        assertSame(Artist.class, query.getRoot());
-    }
+	@Test
+	public void testSetRootClass() {
+		AbstractQuery query = MockAbstractQuery.mockAbstractQuery1();
+		assertNull(query.getRoot());
+		query.setRoot(Artist.class);
+		assertSame(Artist.class, query.getRoot());
+	}
 
-    @Test
-    public void testSetInvalidRoot() {
-        AbstractQuery query = new MockAbstractQuery();
-        assertNull(query.getRoot());
-        try {
-            query.setRoot(new Integer(1));
-            fail("Should not be able to set the root to an Integer");
-        }
-        catch (IllegalArgumentException e) {
-        }
-    }
+	@Test
+	public void testSetInvalidRoot() {
+		AbstractQuery query = MockAbstractQuery.mockAbstractQuery1();
+		assertNull(query.getRoot());
+		try {
+			query.setRoot(new Integer(1));
+			fail("Should not be able to set the root to an Integer");
+		} catch (IllegalArgumentException e) {
+		}
+	}
 }

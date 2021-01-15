@@ -19,6 +19,11 @@
 
 package org.apache.cayenne.event;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.cayenne.access.DataDomain;
 import org.apache.cayenne.configuration.Constants;
 import org.apache.cayenne.configuration.DefaultRuntimeProperties;
@@ -27,80 +32,82 @@ import org.apache.cayenne.di.Binder;
 import org.apache.cayenne.di.DIBootstrap;
 import org.apache.cayenne.di.Injector;
 import org.apache.cayenne.di.Module;
-import org.apache.cayenne.log.Slf4jJdbcEventLogger;
 import org.apache.cayenne.log.JdbcEventLogger;
+import org.apache.cayenne.log.Slf4jJdbcEventLogger;
 import org.apache.cayenne.tx.DefaultTransactionFactory;
 import org.apache.cayenne.tx.DefaultTransactionManager;
 import org.apache.cayenne.tx.TransactionFactory;
 import org.apache.cayenne.tx.TransactionManager;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.mockito.Mockito;
 
 public class XMPPBridgeProviderTest {
 
-    private static final DataDomain DOMAIN = new DataDomain("test");
-    private static final EventManager EVENT_MANAGER = new DefaultEventManager();
-    protected static final String HOST_TEST = "somehost.com";
-    protected static final String CHAT_SERVICE_TEST = "conference";
-    protected static final String LOGIN_TEST = "login";
-    protected static final String PASSWORD_TEST = "password";
-    protected static final boolean SECURE_CONNECTION_TEST = true;
-    protected static final int PORT_TEST = 12345;
+	static public Module mockModule1() {
+		Module mockInstance = Mockito.spy(Module.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Binder binder = stubInvo.getArgument(0);
+				binder.bindMap(String.class, Constants.PROPERTIES_MAP);
+				binder.bind(DataDomain.class).toInstance(DOMAIN);
+				binder.bind(EventManager.class).toInstance(EVENT_MANAGER);
+				binder.bind(TransactionManager.class).to(DefaultTransactionManager.class);
+				binder.bind(TransactionFactory.class).to(DefaultTransactionFactory.class);
+				binder.bind(JdbcEventLogger.class).to(Slf4jJdbcEventLogger.class);
+				binder.bind(RuntimeProperties.class).to(DefaultRuntimeProperties.class);
+				return null;
+			}).when(mockInstance).configure(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Test
-    public void testGetXMPPBridge() throws Exception {
-        Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new XMPPModule());
-        EventBridge bridge = injector.getInstance(EventBridge.class);
+	private static final DataDomain DOMAIN = new DataDomain("test");
+	private static final EventManager EVENT_MANAGER = new DefaultEventManager();
+	protected static final String HOST_TEST = "somehost.com";
+	protected static final String CHAT_SERVICE_TEST = "conference";
+	protected static final String LOGIN_TEST = "login";
+	protected static final String PASSWORD_TEST = "password";
+	protected static final boolean SECURE_CONNECTION_TEST = true;
+	protected static final int PORT_TEST = 12345;
 
-        assertNotNull(bridge);
-        assertTrue(bridge instanceof XMPPBridge);
-    }
+	@Test
+	public void testGetXMPPBridge() throws Exception {
+		Injector injector = DIBootstrap.createInjector(XMPPBridgeProviderTest.mockModule1(), new XMPPModule());
+		EventBridge bridge = injector.getInstance(EventBridge.class);
 
-    @Test
-    public void testUseProperties() throws Exception {
-        Module module = binder -> {
-            XMPPModule.contributeSecureConnection(binder, SECURE_CONNECTION_TEST);
-            XMPPModule.contributeHost(binder, HOST_TEST);
-            XMPPModule.contributePort(binder, PORT_TEST);
-            XMPPModule.contributeLogin(binder, LOGIN_TEST, PASSWORD_TEST);
-            XMPPModule.contributeChatService(binder, CHAT_SERVICE_TEST);
-        };
+		assertNotNull(bridge);
+		assertTrue(bridge instanceof XMPPBridge);
+	}
 
-        Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new XMPPModule(), module);
-        XMPPBridge bridge = (XMPPBridge) injector.getInstance(EventBridge.class);
+	@Test
+	public void testUseProperties() throws Exception {
+		Module module = binder -> {
+			XMPPModule.contributeSecureConnection(binder, SECURE_CONNECTION_TEST);
+			XMPPModule.contributeHost(binder, HOST_TEST);
+			XMPPModule.contributePort(binder, PORT_TEST);
+			XMPPModule.contributeLogin(binder, LOGIN_TEST, PASSWORD_TEST);
+			XMPPModule.contributeChatService(binder, CHAT_SERVICE_TEST);
+		};
 
-        assertEquals(HOST_TEST, bridge.getXmppHost());
-        assertEquals(CHAT_SERVICE_TEST, bridge.getChatService());
-        assertEquals(LOGIN_TEST, bridge.getLoginId());
-        assertEquals(PASSWORD_TEST, bridge.getPassword());
-        assertEquals(SECURE_CONNECTION_TEST, bridge.isSecureConnection());
-        assertEquals(PORT_TEST, bridge.getXmppPort());
-    }
+		Injector injector = DIBootstrap.createInjector(XMPPBridgeProviderTest.mockModule1(), new XMPPModule(), module);
+		XMPPBridge bridge = (XMPPBridge) injector.getInstance(EventBridge.class);
 
-    @Test
-    public void testUseDefaultProperties() throws Exception {
-        Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new XMPPModule());
-        XMPPBridge bridge = (XMPPBridge) injector.getInstance(EventBridge.class);
+		assertEquals(HOST_TEST, bridge.getXmppHost());
+		assertEquals(CHAT_SERVICE_TEST, bridge.getChatService());
+		assertEquals(LOGIN_TEST, bridge.getLoginId());
+		assertEquals(PASSWORD_TEST, bridge.getPassword());
+		assertEquals(SECURE_CONNECTION_TEST, bridge.isSecureConnection());
+		assertEquals(PORT_TEST, bridge.getXmppPort());
+	}
 
-        assertEquals(XMPPBridge.DEFAULT_CHAT_SERVICE, bridge.getChatService());
-        assertEquals(0, bridge.getXmppPort());
-        assertFalse(bridge.isSecureConnection());
-    }
+	@Test
+	public void testUseDefaultProperties() throws Exception {
+		Injector injector = DIBootstrap.createInjector(XMPPBridgeProviderTest.mockModule1(), new XMPPModule());
+		XMPPBridge bridge = (XMPPBridge) injector.getInstance(EventBridge.class);
 
-    static class DefaultBindings implements Module {
-        @Override
-        public void configure(Binder binder) {
-            binder.bindMap(String.class, Constants.PROPERTIES_MAP);
-            binder.bind(DataDomain.class).toInstance(DOMAIN);
-            binder.bind(EventManager.class).toInstance(EVENT_MANAGER);
-            binder.bind(TransactionManager.class).to(DefaultTransactionManager.class);
-            binder.bind(TransactionFactory.class).to(DefaultTransactionFactory.class);
-            binder.bind(JdbcEventLogger.class).to(Slf4jJdbcEventLogger.class);
-            binder.bind(RuntimeProperties.class).to(DefaultRuntimeProperties.class);
-        }
-    }
+		assertEquals(XMPPBridge.DEFAULT_CHAT_SERVICE, bridge.getChatService());
+		assertEquals(0, bridge.getXmppPort());
+		assertFalse(bridge.isSecureConnection());
+	}
 }

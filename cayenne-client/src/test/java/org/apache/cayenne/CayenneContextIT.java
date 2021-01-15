@@ -19,6 +19,22 @@
 
 package org.apache.cayenne;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.event.DefaultEventManager;
 import org.apache.cayenne.event.EventManager;
@@ -44,22 +60,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 @UseServerRuntime(CayenneProjects.MULTI_TIER_PROJECT)
 public class CayenneContextIT extends ClientCase {
 
@@ -70,7 +70,7 @@ public class CayenneContextIT extends ClientCase {
 
 	@After
 	public void cleanUp() {
-		if(eventManager != null) {
+		if (eventManager != null) {
 			eventManager.shutdown();
 			eventManager = null;
 		}
@@ -274,7 +274,7 @@ public class CayenneContextIT extends ClientCase {
 			}
 		});
 
-		ClientChannel channel = new ClientChannel(connection, false, new MockEventManager(), false);
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false);
 
 		// check that a HOLLOW object is infalted on "beforePropertyRead"
 		ClientMtTable1 hollow = new ClientMtTable1();
@@ -325,7 +325,7 @@ public class CayenneContextIT extends ClientCase {
 				}
 			}
 		});
-		ClientChannel channel = new ClientChannel(connection, false, new MockEventManager(), false);
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false);
 
 		CayenneContext context = new CayenneContext(channel);
 		context.setEntityResolver(serverContext.getEntityResolver().getClientEntityResolver());

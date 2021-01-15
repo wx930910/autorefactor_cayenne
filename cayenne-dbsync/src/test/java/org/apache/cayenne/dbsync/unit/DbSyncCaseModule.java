@@ -22,17 +22,22 @@ import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.di.Binder;
 import org.apache.cayenne.di.Module;
 import org.apache.cayenne.di.spi.DefaultScope;
+import org.mockito.Mockito;
 
-public class DbSyncCaseModule implements Module {
-    protected DefaultScope testScope;
-
-    public DbSyncCaseModule(DefaultScope testScope) {
-        this.testScope = testScope;
-    }
-
-    @Override
-    public void configure(Binder binder) {
-        binder.bind(ServerRuntime.class).toProvider(DbSyncServerRuntimeProvider.class).in(
-                testScope);
-    }
+public class DbSyncCaseModule {
+	static public Module mockModule1(DefaultScope testScope) {
+		DefaultScope[] mockFieldVariableTestScope = new DefaultScope[1];
+		Module mockInstance = Mockito.spy(Module.class);
+		mockFieldVariableTestScope[0] = testScope;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Binder binder = stubInvo.getArgument(0);
+				binder.bind(ServerRuntime.class).toProvider(DbSyncServerRuntimeProvider.class)
+						.in(mockFieldVariableTestScope[0]);
+				return null;
+			}).when(mockInstance).configure(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

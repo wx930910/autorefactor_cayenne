@@ -30,17 +30,16 @@ import org.apache.cayenne.unit.UnitDbAdapter;
 
 public class WeakReferenceStrategyServerRuntimeProvider extends ServerRuntimeProvider {
 
-    public WeakReferenceStrategyServerRuntimeProvider(@Inject ServerCaseDataSourceFactory dataSourceFactory,
-                                                      @Inject ServerCaseProperties properties,
-                                                      @Inject Provider<DbAdapter> dbAdapterProvider,
-                                                      @Inject UnitDbAdapter unitDbAdapter) {
-        super(dataSourceFactory, properties, dbAdapterProvider, unitDbAdapter);
-    }
+	public WeakReferenceStrategyServerRuntimeProvider(@Inject ServerCaseDataSourceFactory dataSourceFactory,
+			@Inject ServerCaseProperties properties, @Inject Provider<DbAdapter> dbAdapterProvider,
+			@Inject UnitDbAdapter unitDbAdapter) {
+		super(dataSourceFactory, properties, dbAdapterProvider, unitDbAdapter);
+	}
 
-    @Override
-    protected Collection<? extends Module> getExtraModules() {
-        Collection<Module> modules = new ArrayList<>(super.getExtraModules());
-        modules.add(new WeakReferenceStrategyModule());
-        return modules;
-    }
+	@Override
+	protected Collection<? extends Module> getExtraModules() {
+		Collection<Module> modules = new ArrayList<>(super.getExtraModules());
+		modules.add(WeakReferenceStrategyModule.mockModule1());
+		return modules;
+	}
 }

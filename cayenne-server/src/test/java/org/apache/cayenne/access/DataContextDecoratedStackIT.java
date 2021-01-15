@@ -27,14 +27,11 @@ import java.util.Map;
 import org.apache.cayenne.Cayenne;
 import org.apache.cayenne.DataChannel;
 import org.apache.cayenne.ObjectContext;
-import org.apache.cayenne.QueryResponse;
 import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.dba.frontbase.FrontBaseAdapter;
 import org.apache.cayenne.dba.openbase.OpenBaseAdapter;
 import org.apache.cayenne.di.Inject;
-import org.apache.cayenne.event.EventManager;
 import org.apache.cayenne.graph.GraphDiff;
-import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.query.Query;
 import org.apache.cayenne.query.SQLTemplate;
 import org.apache.cayenne.testdo.testmap.Artist;
@@ -42,6 +39,7 @@ import org.apache.cayenne.unit.di.server.CayenneProjects;
 import org.apache.cayenne.unit.di.server.ServerCase;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class DataContextDecoratedStackIT extends ServerCase {
@@ -52,7 +50,29 @@ public class DataContextDecoratedStackIT extends ServerCase {
 	@Test
 	public void testCommitDecorated() {
 		DataDomain dd = runtime.getDataDomain();
-		DataChannel decorator = new DataChannelDecorator(dd);
+		DataChannel decorator = Mockito.spy(DataChannel.class);
+		DataChannel[] decoratorChannel = new DataChannel[1];
+		decoratorChannel[0] = dd;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				ObjectContext originatingContext = stubInvo.getArgument(0);
+				GraphDiff changes = stubInvo.getArgument(1);
+				int syncType = stubInvo.getArgument(2);
+				return decoratorChannel[0].onSync(originatingContext, changes, syncType);
+			}).when(decorator).onSync(Mockito.any(), Mockito.any(), Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return decoratorChannel[0].getEventManager();
+			}).when(decorator).getEventManager();
+			Mockito.doAnswer((stubInvo) -> {
+				ObjectContext originatingContext = stubInvo.getArgument(0);
+				Query queryMockVariable = stubInvo.getArgument(1);
+				return decoratorChannel[0].onQuery(originatingContext, queryMockVariable);
+			}).when(decorator).onQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return decoratorChannel[0].getEntityResolver();
+			}).when(decorator).getEntityResolver();
+		} catch (Exception exception) {
+		}
 		DataContext context = (DataContext) runtime.newContext(decorator);
 
 		Artist a = context.newObject(Artist.class);
@@ -71,47 +91,32 @@ public class DataContextDecoratedStackIT extends ServerCase {
 	@Test
 	public void testGetParentDataDomain() {
 		DataDomain dd = runtime.getDataDomain();
-		DataChannel decorator = new DataChannelDecorator(dd);
+		DataChannel decorator = Mockito.spy(DataChannel.class);
+		DataChannel[] decoratorChannel = new DataChannel[1];
+		decoratorChannel[0] = dd;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				ObjectContext originatingContext = stubInvo.getArgument(0);
+				GraphDiff changes = stubInvo.getArgument(1);
+				int syncType = stubInvo.getArgument(2);
+				return decoratorChannel[0].onSync(originatingContext, changes, syncType);
+			}).when(decorator).onSync(Mockito.any(), Mockito.any(), Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return decoratorChannel[0].getEventManager();
+			}).when(decorator).getEventManager();
+			Mockito.doAnswer((stubInvo) -> {
+				ObjectContext originatingContext = stubInvo.getArgument(0);
+				Query query = stubInvo.getArgument(1);
+				return decoratorChannel[0].onQuery(originatingContext, query);
+			}).when(decorator).onQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return decoratorChannel[0].getEntityResolver();
+			}).when(decorator).getEntityResolver();
+		} catch (Exception exception) {
+		}
 		DataContext context = (DataContext) runtime.newContext(decorator);
 
 		assertSame(dd, context.getParentDataDomain());
-	}
-
-	class DataChannelDecorator implements DataChannel {
-
-		protected DataChannel channel;
-
-		protected DataChannelDecorator() {
-
-		}
-
-		public DataChannelDecorator(DataChannel channel) {
-			setChannel(channel);
-		}
-
-		public EntityResolver getEntityResolver() {
-			return channel.getEntityResolver();
-		}
-
-		public EventManager getEventManager() {
-			return channel.getEventManager();
-		}
-
-		public QueryResponse onQuery(ObjectContext originatingContext, Query query) {
-			return channel.onQuery(originatingContext, query);
-		}
-
-		public GraphDiff onSync(ObjectContext originatingContext, GraphDiff changes, int syncType) {
-			return channel.onSync(originatingContext, changes, syncType);
-		}
-
-		public DataChannel getChannel() {
-			return channel;
-		}
-
-		public void setChannel(DataChannel channel) {
-			this.channel = channel;
-		}
 	}
 
 }

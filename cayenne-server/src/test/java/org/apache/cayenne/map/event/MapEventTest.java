@@ -19,57 +19,66 @@
 
 package org.apache.cayenne.map.event;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Test;
+import org.mockito.Mockito;
+
 /**
  */
 public class MapEventTest {
 
-    @Test
-    public void testNoNameChange() throws Exception {
-        MapEvent event = new MapEventFixture(new Object(), "someName");
-        assertEquals("someName", event.getNewName());
-        assertFalse(event.isNameChange());
-    }
+	public MapEvent mockMapEvent1(Object source, String newName) {
+		String[] mockFieldVariableNewName = new String[1];
+		MapEvent mockInstance = Mockito.mock(MapEvent.class,
+				Mockito.withSettings().useConstructor(source).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		mockFieldVariableNewName[0] = newName;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableNewName[0];
+			}).when(mockInstance).getNewName();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Test
-    public void testNameChange() throws Exception {
-        MapEvent event = new MapEventFixture(new Object(), "someName", "someOldName");
-        assertEquals("someName", event.getNewName());
-        assertTrue(event.isNameChange());
-    }
+	public MapEvent mockMapEvent2(Object source, String newName, String oldName) {
+		String[] mockFieldVariableNewName = new String[1];
+		MapEvent mockInstance = Mockito.mock(MapEvent.class,
+				Mockito.withSettings().useConstructor(source, oldName).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		mockFieldVariableNewName[0] = newName;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableNewName[0];
+			}).when(mockInstance).getNewName();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Test
-    public void testOldName() throws Exception {
-        MapEvent event = new MapEventFixture(new Object(), "someName");
-        assertNull(event.getOldName());
+	@Test
+	public void testNoNameChange() throws Exception {
+		MapEvent event = mockMapEvent1(new Object(), "someName");
+		assertEquals("someName", event.getNewName());
+		assertFalse(event.isNameChange());
+	}
 
-        event.setOldName("oldName");
-        assertEquals("oldName", event.getOldName());
-    }
+	@Test
+	public void testNameChange() throws Exception {
+		MapEvent event = mockMapEvent2(new Object(), "someName", "someOldName");
+		assertEquals("someName", event.getNewName());
+		assertTrue(event.isNameChange());
+	}
 
-    final class MapEventFixture extends MapEvent {
+	@Test
+	public void testOldName() throws Exception {
+		MapEvent event = mockMapEvent1(new Object(), "someName");
+		assertNull(event.getOldName());
 
-        String newName;
-
-        public MapEventFixture(Object source, String newName) {
-            super(source);
-            this.newName = newName;
-        }
-
-        public MapEventFixture(Object source, String newName, String oldName) {
-            super(source, oldName);
-            this.newName = newName;
-        }
-
-        @Override
-        public String getNewName() {
-            return newName;
-        }
-    }
+		event.setOldName("oldName");
+		assertEquals("oldName", event.getOldName());
+	}
 }

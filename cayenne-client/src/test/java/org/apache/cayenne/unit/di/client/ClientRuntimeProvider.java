@@ -35,28 +35,29 @@ import org.apache.cayenne.remote.ClientConnection;
 
 public class ClientRuntimeProvider implements Provider<ClientRuntime> {
 
-    // injecting provider to make this provider independent from scoping of ServerRuntime
-    @Inject
-    protected Provider<ServerRuntime> serverRuntimeProvider;
+	// injecting provider to make this provider independent from scoping of
+	// ServerRuntime
+	@Inject
+	protected Provider<ServerRuntime> serverRuntimeProvider;
 
-    @Inject
-    protected ClientCaseProperties clientCaseProperties;
+	@Inject
+	protected ClientCaseProperties clientCaseProperties;
 
-    protected Collection<? extends Module> getModules() {
-        return Collections.singleton(binder -> {
-            // add an interceptor between client and server parts to capture and inspect the traffic
-            binder.bind(Key.get(DataChannel.class, ClientRuntime.CLIENT_SERVER_CHANNEL_KEY))
-                    .toProviderInstance(new InterceptingClientServerChannelProvider(serverRuntimeProvider.get().getInjector()));
-            // create local connection
-            binder.bind(ClientConnection.class).toProviderInstance(new LocalConnectionProvider());
-        });
-    }
+	protected Collection<? extends Module> getModules() {
+		return Collections.singleton(binder -> {
+			// add an interceptor between client and server parts to capture and inspect the
+			// traffic
+			binder.bind(Key.get(DataChannel.class, ClientRuntime.CLIENT_SERVER_CHANNEL_KEY))
+					.toProviderInstance(InterceptingClientServerChannelProvider
+							.mockLocalClientServerChannelProvider1(serverRuntimeProvider.get().getInjector()));
+			// create local connection
+			binder.bind(ClientConnection.class).toProviderInstance(new LocalConnectionProvider());
+		});
+	}
 
-    public ClientRuntime get() throws ConfigurationException {
-        Collection<Module> modules = new ArrayList<>(getModules());
-        return ClientRuntime.builder()
-                .properties(clientCaseProperties.getRuntimeProperties())
-                .addModules(modules)
-                .build();
-    }
+	public ClientRuntime get() throws ConfigurationException {
+		Collection<Module> modules = new ArrayList<>(getModules());
+		return ClientRuntime.builder().properties(clientCaseProperties.getRuntimeProperties()).addModules(modules)
+				.build();
+	}
 }

@@ -58,13 +58,11 @@ import org.apache.cayenne.unit.UnitDbAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
- * Default implementation of the AccessStack that has a single DataNode per DataMap.
+ * Default implementation of the AccessStack that has a single DataNode per
+ * DataMap.
  */
 public class SchemaBuilder {
-
-	
 
 	private static final Logger logger = LoggerFactory.getLogger(SchemaBuilder.class);
 
@@ -77,15 +75,15 @@ public class SchemaBuilder {
 			"locking.map.xml", "soft-delete.map.xml", "empty.map.xml", "relationships.map.xml",
 			"relationships-activity.map.xml", "relationships-delete-rules.map.xml",
 			"relationships-collection-to-many.map.xml", "relationships-child-master.map.xml",
-			"relationships-clob.map.xml", "relationships-flattened.map.xml", "relationships-many-to-many-join.map.xml", "relationships-set-to-many.map.xml",
-			"relationships-to-many-fk.map.xml", "relationships-to-one-fk.map.xml", "return-types.map.xml",
-			"uuid.map.xml", "multi-tier.map.xml", "reflexive.map.xml", "delete-rules.map.xml",
-            "lifecycle-callbacks-order.map.xml", "lifecycles.map.xml", "map-to-many.map.xml", "toone.map.xml", "meaningful-pk.map.xml",
-			"table-primitives.map.xml", "generic.map.xml", "map-db1.map.xml", "map-db2.map.xml", "embeddable.map.xml",
-			"qualified.map.xml", "quoted-identifiers.map.xml", "inheritance-single-table1.map.xml",
-			"inheritance-vertical.map.xml", "oneway-rels.map.xml", "unsupported-distinct-types.map.xml",
-			"array-type.map.xml", "cay-2032.map.xml", "weighted-sort.map.xml", "hybrid-data-object.map.xml",
-			"java8.map.xml", "cay-2521.map.xml", "inheritance-with-enum.map.xml" };
+			"relationships-clob.map.xml", "relationships-flattened.map.xml", "relationships-many-to-many-join.map.xml",
+			"relationships-set-to-many.map.xml", "relationships-to-many-fk.map.xml", "relationships-to-one-fk.map.xml",
+			"return-types.map.xml", "uuid.map.xml", "multi-tier.map.xml", "reflexive.map.xml", "delete-rules.map.xml",
+			"lifecycle-callbacks-order.map.xml", "lifecycles.map.xml", "map-to-many.map.xml", "toone.map.xml",
+			"meaningful-pk.map.xml", "table-primitives.map.xml", "generic.map.xml", "map-db1.map.xml",
+			"map-db2.map.xml", "embeddable.map.xml", "qualified.map.xml", "quoted-identifiers.map.xml",
+			"inheritance-single-table1.map.xml", "inheritance-vertical.map.xml", "oneway-rels.map.xml",
+			"unsupported-distinct-types.map.xml", "array-type.map.xml", "cay-2032.map.xml", "weighted-sort.map.xml",
+			"hybrid-data-object.map.xml", "java8.map.xml", "cay-2521.map.xml", "inheritance-with-enum.map.xml" };
 
 	// hardcoded dependent entities that should be excluded
 	// if LOBs are not supported
@@ -156,7 +154,7 @@ public class SchemaBuilder {
 		node.setDataSource(dataSourceFactory.getSharedDataSource());
 
 		// setup test extended types
-		node.getAdapter().getExtendedTypes().registerType(new StringET1ExtendedType());
+		node.getAdapter().getExtendedTypes().registerType(StringET1ExtendedType.mockExtendedType1());
 
 		// tweak mapping with a delegate
 		for (Procedure proc : map.getProcedures()) {
@@ -174,8 +172,8 @@ public class SchemaBuilder {
 	}
 
 	/**
-	 * Remote binary pk {@link DbEntity} for {@link DbAdapter} not supporting
-	 * that and so on.
+	 * Remote binary pk {@link DbEntity} for {@link DbAdapter} not supporting that
+	 * and so on.
 	 */
 	protected void filterDataMap(DataMap map) {
 		boolean supportsBinaryPK = unitDbAdapter.supportsBinaryPK();
@@ -227,9 +225,9 @@ public class SchemaBuilder {
 	}
 
 	/**
-	 * Creates primary key support for all node DbEntities. Will use its
-	 * facilities provided by DbAdapter to generate any necessary database
-	 * objects and data for primary key support.
+	 * Creates primary key support for all node DbEntities. Will use its facilities
+	 * provided by DbAdapter to generate any necessary database objects and data for
+	 * primary key support.
 	 */
 	public void createPKSupport() throws Exception {
 		for (DataNode node : domain.getDataNodes()) {
@@ -238,8 +236,8 @@ public class SchemaBuilder {
 	}
 
 	/**
-	 * Helper method that orders DbEntities to satisfy referential constraints
-	 * and returns an ordered list.
+	 * Helper method that orders DbEntities to satisfy referential constraints and
+	 * returns an ordered list.
 	 */
 	private List<DbEntity> dbEntitiesInInsertOrder(DataMap map) {
 		TreeMap<String, DbEntity> dbEntityMap = new TreeMap<>(map.getDbEntityMap());
@@ -262,7 +260,8 @@ public class SchemaBuilder {
 		return entities;
 	}
 
-	// This seems actually unused for some time now (from 2014 to 2018), and caused no trouble
+	// This seems actually unused for some time now (from 2014 to 2018), and caused
+	// no trouble
 	private void dbEntitiesFilter(List<DbEntity> entities) {
 		// filter various unsupported tests...
 

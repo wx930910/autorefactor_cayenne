@@ -18,54 +18,56 @@
  ****************************************************************/
 package org.apache.cayenne.testdo.extended_type;
 
-import org.apache.cayenne.access.types.ExtendedType;
-
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-public class StringET1ExtendedType implements ExtendedType<StringET1> {
+import org.apache.cayenne.access.types.ExtendedType;
+import org.mockito.Mockito;
 
-    @Override
-    public String getClassName() {
-        return StringET1.class.getName();
-    }
+public class StringET1ExtendedType {
 
-    @Override
-    public StringET1 materializeObject(ResultSet rs, int index, int type) throws Exception {
-        String string = rs.getString(index);
-        return string != null ? new StringET1(string) : null;
-    }
-
-    @Override
-    public StringET1 materializeObject(CallableStatement rs, int index, int type)
-            throws Exception {
-        String string = rs.getString(index);
-        return string != null ? new StringET1(string) : null;
-    }
-
-    @Override
-    public void setJdbcObject(
-            PreparedStatement statement,
-            StringET1 value,
-            int pos,
-            int type,
-            int precision) throws Exception {
-
-        if (value != null) {
-            statement.setString(pos, value.getString());
-        }
-        else {
-            statement.setNull(pos, type);
-        }
-    }
-
-    @Override
-    public String toString(StringET1 value) {
-        if (value == null) {
-            return "NULL";
-        }
-
-        return value.toString();
-    }
+	static public ExtendedType<StringET1> mockExtendedType1() {
+		ExtendedType<StringET1> mockInstance = Mockito.spy(ExtendedType.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				PreparedStatement statement = stubInvo.getArgument(0);
+				StringET1 value = stubInvo.getArgument(1);
+				int pos = stubInvo.getArgument(2);
+				int type = stubInvo.getArgument(3);
+				if (value != null) {
+					statement.setString(pos, value.getString());
+				} else {
+					statement.setNull(pos, type);
+				}
+				return null;
+			}).when(mockInstance).setJdbcObject(Mockito.any(), Mockito.any(), Mockito.anyInt(), Mockito.anyInt(),
+					Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return StringET1.class.getName();
+			}).when(mockInstance).getClassName();
+			Mockito.doAnswer((stubInvo) -> {
+				ResultSet rs = stubInvo.getArgument(0);
+				int index = stubInvo.getArgument(1);
+				String string = rs.getString(index);
+				return string != null ? new StringET1(string) : null;
+			}).when(mockInstance).materializeObject(Mockito.any(ResultSet.class), Mockito.anyInt(), Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				StringET1 value = stubInvo.getArgument(0);
+				if (value == null) {
+					return "NULL";
+				}
+				return value.toString();
+			}).when(mockInstance).toString(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				CallableStatement rs = stubInvo.getArgument(0);
+				int index = stubInvo.getArgument(1);
+				String string = rs.getString(index);
+				return string != null ? new StringET1(string) : null;
+			}).when(mockInstance).materializeObject(Mockito.any(CallableStatement.class), Mockito.anyInt(),
+					Mockito.anyInt());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

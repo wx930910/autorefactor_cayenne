@@ -19,6 +19,21 @@
 
 package org.apache.cayenne.remote;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.cayenne.CayenneContext;
 import org.apache.cayenne.CayenneRuntimeException;
 import org.apache.cayenne.MockPersistentObject;
@@ -40,221 +55,189 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class ClientChannelTest {
 
-    private List<DefaultEventManager> managers = new ArrayList<>();
+	private List<DefaultEventManager> managers = new ArrayList<>();
 
-    @After
-    public void cleanUp() {
-        if(managers.size() == 0) {
-            return;
-        }
-        for(DefaultEventManager manager : managers) {
-            manager.shutdown();
-        }
-        managers.clear();
-    }
+	@After
+	public void cleanUp() {
+		if (managers.size() == 0) {
+			return;
+		}
+		for (DefaultEventManager manager : managers) {
+			manager.shutdown();
+		}
+		managers.clear();
+	}
 
-    @Test
-    public void testOnQuerySelect() {
+	@Test
+	public void testOnQuerySelect() {
 
-        final MockPersistentObject o1 = new MockPersistentObject();
-        ObjectId oid1 = new ObjectId("test_entity");
-        o1.setObjectId(oid1);
+		final MockPersistentObject o1 = new MockPersistentObject();
+		ObjectId oid1 = new ObjectId("test_entity");
+		o1.setObjectId(oid1);
 
-        ClientConnection connection = mock(ClientConnection.class);
-        when(connection.sendMessage((ClientMessage) any())).thenAnswer(
-                new Answer<Object>() {
+		ClientConnection connection = mock(ClientConnection.class);
+		when(connection.sendMessage((ClientMessage) any())).thenAnswer(new Answer<Object>() {
 
-                    public Object answer(InvocationOnMock invocation) {
-                        ClientMessage arg = (ClientMessage) invocation.getArguments()[0];
+			public Object answer(InvocationOnMock invocation) {
+				ClientMessage arg = (ClientMessage) invocation.getArguments()[0];
 
-                        if (arg instanceof BootstrapMessage) {
-                            return new EntityResolver();
-                        }
-                        else {
-                            return new GenericResponse(Arrays.asList(o1));
-                        }
-                    }
-                });
+				if (arg instanceof BootstrapMessage) {
+					return new EntityResolver();
+				} else {
+					return new GenericResponse(Arrays.asList(o1));
+				}
+			}
+		});
 
-        ClientChannel channel = new ClientChannel(
-                connection,
-                false,
-                new MockEventManager(),
-                false);
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false);
 
-        CayenneContext context = new CayenneContext(channel);
-        ObjEntity entity = new ObjEntity("test_entity");
-        entity.setClassName(MockPersistentObject.class.getName());
+		CayenneContext context = new CayenneContext(channel);
+		ObjEntity entity = new ObjEntity("test_entity");
+		entity.setClassName(MockPersistentObject.class.getName());
 
-        DataMap dataMap = new DataMap("test");
-        dataMap.addObjEntity(entity);
-        Collection<DataMap> entities = Collections.singleton(dataMap);
-        context.setEntityResolver(new EntityResolver(entities));
+		DataMap dataMap = new DataMap("test");
+		dataMap.addObjEntity(entity);
+		Collection<DataMap> entities = Collections.singleton(dataMap);
+		context.setEntityResolver(new EntityResolver(entities));
 
-        QueryResponse response = channel.onQuery(context, new SelectQuery("test_entity"));
-        assertNotNull(response);
-        List<?> list = response.firstList();
-        assertNotNull(list);
-        assertEquals(1, list.size());
-        Persistent o1_1 = (Persistent) list.get(0);
+		QueryResponse response = channel.onQuery(context, new SelectQuery("test_entity"));
+		assertNotNull(response);
+		List<?> list = response.firstList();
+		assertNotNull(list);
+		assertEquals(1, list.size());
+		Persistent o1_1 = (Persistent) list.get(0);
 
-        assertEquals(o1.getObjectId(), o1_1.getObjectId());
+		assertEquals(o1.getObjectId(), o1_1.getObjectId());
 
-        // ObjectContext must be injected
-        assertEquals(context, o1_1.getObjectContext());
-        assertSame(o1_1, context.getGraphManager().getNode(oid1));
-    }
+		// ObjectContext must be injected
+		assertEquals(context, o1_1.getObjectContext());
+		assertSame(o1_1, context.getGraphManager().getNode(oid1));
+	}
 
-    @Test
-    public void testOnQuerySelectOverrideCached() {
-        ObjEntity entity = new ObjEntity("test_entity");
-        entity.setClassName(MockPersistentObject.class.getName());
+	@Test
+	public void testOnQuerySelectOverrideCached() {
+		ObjEntity entity = new ObjEntity("test_entity");
+		entity.setClassName(MockPersistentObject.class.getName());
 
-        DataMap dataMap = new DataMap("test");
-        dataMap.addObjEntity(entity);
-        Collection<DataMap> entities = Collections.singleton(dataMap);
-        EntityResolver resolver = new EntityResolver(entities);
+		DataMap dataMap = new DataMap("test");
+		dataMap.addObjEntity(entity);
+		Collection<DataMap> entities = Collections.singleton(dataMap);
+		EntityResolver resolver = new EntityResolver(entities);
 
-        CayenneContext context = new CayenneContext();
-        context.setEntityResolver(resolver);
+		CayenneContext context = new CayenneContext();
+		context.setEntityResolver(resolver);
 
-        ObjectId oid = new ObjectId("test_entity", "x", "y");
+		ObjectId oid = new ObjectId("test_entity", "x", "y");
 
-        MockPersistentObject o1 = new MockPersistentObject(oid);
-        context.getGraphManager().registerNode(oid, o1);
-        assertSame(o1, context.getGraphManager().getNode(oid));
+		MockPersistentObject o1 = new MockPersistentObject(oid);
+		context.getGraphManager().registerNode(oid, o1);
+		assertSame(o1, context.getGraphManager().getNode(oid));
 
-        // another object with the same GID ... we must merge it with cached and return
-        // cached object instead of the one fetched
-        MockPersistentObject o2 = new MockPersistentObject(oid);
+		// another object with the same GID ... we must merge it with cached and return
+		// cached object instead of the one fetched
+		MockPersistentObject o2 = new MockPersistentObject(oid);
 
-        MockClientConnection connection = new MockClientConnection(new GenericResponse(
-                Arrays.asList(o2)));
+		MockClientConnection connection = new MockClientConnection(new GenericResponse(Arrays.asList(o2)));
 
-        ClientChannel channel = new ClientChannel(
-                connection,
-                false,
-                new MockEventManager(),
-                false);
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false);
 
-        context.setChannel(channel);
-        QueryResponse response = channel.onQuery(context, new SelectQuery("test_entity"));
-        assertNotNull(response);
+		context.setChannel(channel);
+		QueryResponse response = channel.onQuery(context, new SelectQuery("test_entity"));
+		assertNotNull(response);
 
-        List<?> list = response.firstList();
-        assertNotNull(list);
-        assertEquals(1, list.size());
-        assertTrue("Expected cached object, got: " + list, list.contains(o1));
-        assertSame(o1, context.getGraphManager().getNode(oid));
-    }
+		List<?> list = response.firstList();
+		assertNotNull(list);
+		assertEquals(1, list.size());
+		assertTrue("Expected cached object, got: " + list, list.contains(o1));
+		assertSame(o1, context.getGraphManager().getNode(oid));
+	}
 
-    @Test
-    public void testOnQuerySelectOverrideModifiedCached() {
-        ObjEntity entity = new ObjEntity("test_entity");
-        entity.setClassName(MockPersistentObject.class.getName());
-        DataMap dataMap = new DataMap("test");
-        dataMap.addObjEntity(entity);
-        Collection<DataMap> entities = Collections.singleton(dataMap);
-        EntityResolver resolver = new EntityResolver(entities);
-        CayenneContext context = new CayenneContext();
-        context.setEntityResolver(resolver);
+	@Test
+	public void testOnQuerySelectOverrideModifiedCached() {
+		ObjEntity entity = new ObjEntity("test_entity");
+		entity.setClassName(MockPersistentObject.class.getName());
+		DataMap dataMap = new DataMap("test");
+		dataMap.addObjEntity(entity);
+		Collection<DataMap> entities = Collections.singleton(dataMap);
+		EntityResolver resolver = new EntityResolver(entities);
+		CayenneContext context = new CayenneContext();
+		context.setEntityResolver(resolver);
 
-        ObjectId oid = new ObjectId("test_entity", "x", "y");
+		ObjectId oid = new ObjectId("test_entity", "x", "y");
 
-        MockPersistentObject o1 = new MockPersistentObject(oid);
-        o1.setPersistenceState(PersistenceState.MODIFIED);
-        context.getGraphManager().registerNode(oid, o1);
-        assertSame(o1, context.getGraphManager().getNode(oid));
+		MockPersistentObject o1 = new MockPersistentObject(oid);
+		o1.setPersistenceState(PersistenceState.MODIFIED);
+		context.getGraphManager().registerNode(oid, o1);
+		assertSame(o1, context.getGraphManager().getNode(oid));
 
-        // another object with the same GID ... we must merge it with cached and return
-        // cached object instead of the one fetched
-        MockPersistentObject o2 = new MockPersistentObject(oid);
-        MockClientConnection connection = new MockClientConnection(new GenericResponse(
-                Arrays.asList(o2)));
+		// another object with the same GID ... we must merge it with cached and return
+		// cached object instead of the one fetched
+		MockPersistentObject o2 = new MockPersistentObject(oid);
+		MockClientConnection connection = new MockClientConnection(new GenericResponse(Arrays.asList(o2)));
 
-        ClientChannel channel = new ClientChannel(
-                connection,
-                false,
-                new MockEventManager(),
-                false);
+		ClientChannel channel = new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false);
 
-        context.setChannel(channel);
-        QueryResponse response = channel.onQuery(context, new SelectQuery("test_entity"));
-        assertNotNull(response);
-        assertEquals(1, response.size());
-        List<?> list = response.firstList();
-        assertNotNull(list);
-        assertEquals(1, list.size());
-        assertTrue("Expected cached object, got: " + list, list.contains(o1));
-        assertSame(o1, context.getGraphManager().getNode(oid));
-    }
+		context.setChannel(channel);
+		QueryResponse response = channel.onQuery(context, new SelectQuery("test_entity"));
+		assertNotNull(response);
+		assertEquals(1, response.size());
+		List<?> list = response.firstList();
+		assertNotNull(list);
+		assertEquals(1, list.size());
+		assertTrue("Expected cached object, got: " + list, list.contains(o1));
+		assertSame(o1, context.getGraphManager().getNode(oid));
+	}
 
-    @Test
-    public void testEventBridgeFailure() throws Exception {
-        MockClientConnection connection = new MockClientConnection() {
+	@Test
+	public void testEventBridgeFailure() throws Exception {
+		MockClientConnection connection = new MockClientConnection() {
 
-            @Override
-            public EventBridge getServerEventBridge() throws CayenneRuntimeException {
-                return new EventBridge(Collections.EMPTY_LIST, "ext") {
+			@Override
+			public EventBridge getServerEventBridge() throws CayenneRuntimeException {
+				return new EventBridge(Collections.EMPTY_LIST, "ext") {
 
-                    @Override
-                    protected void sendExternalEvent(CayenneEvent localEvent)
-                            throws Exception {
-                    }
+					@Override
+					protected void sendExternalEvent(CayenneEvent localEvent) throws Exception {
+					}
 
-                    @Override
-                    protected void shutdownExternal() throws Exception {
-                    }
+					@Override
+					protected void shutdownExternal() throws Exception {
+					}
 
-                    @Override
-                    protected void startupExternal() throws Exception {
-                        // intentionally throw an exception
-                        throw new CayenneRuntimeException("Test failure");
-                    }
-                };
-            }
-        };
+					@Override
+					protected void startupExternal() throws Exception {
+						// intentionally throw an exception
+						throw new CayenneRuntimeException("Test failure");
+					}
+				};
+			}
+		};
 
-        // default constructor must fail
-        try {
-            new ClientChannel(connection, false, new MockEventManager(), false);
-            fail("Channel didn't throw on broken EventBridge");
-        } catch (CayenneRuntimeException e) {
-            // expected
-        }
+		// default constructor must fail
+		try {
+			new ClientChannel(connection, false, MockEventManager.mockEventManager1(), false);
+			fail("Channel didn't throw on broken EventBridge");
+		} catch (CayenneRuntimeException e) {
+			// expected
+		}
 
-        try {
-            DefaultEventManager manager = new DefaultEventManager(2);
-            managers.add(manager);
-            new ClientChannel(connection, false, manager, false);
-            fail("Channel didn't throw on broken EventBridge");
-        } catch (CayenneRuntimeException e) {
-            // expected
-        }
+		try {
+			DefaultEventManager manager = new DefaultEventManager(2);
+			managers.add(manager);
+			new ClientChannel(connection, false, manager, false);
+			fail("Channel didn't throw on broken EventBridge");
+		} catch (CayenneRuntimeException e) {
+			// expected
+		}
 
-        try {
-            DefaultEventManager manager = new DefaultEventManager(2);
-            managers.add(manager);
-            new ClientChannel(connection, false, manager, true);
-        } catch (CayenneRuntimeException e) {
-            fail("Channel threw on broken EventBridge");
-        }
-    }
+		try {
+			DefaultEventManager manager = new DefaultEventManager(2);
+			managers.add(manager);
+			new ClientChannel(connection, false, manager, true);
+		} catch (CayenneRuntimeException e) {
+			fail("Channel threw on broken EventBridge");
+		}
+	}
 }

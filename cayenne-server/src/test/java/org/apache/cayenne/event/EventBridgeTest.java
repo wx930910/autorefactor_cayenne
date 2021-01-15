@@ -19,176 +19,203 @@
 
 package org.apache.cayenne.event;
 
-import org.apache.cayenne.access.event.SnapshotEvent;
-import org.apache.cayenne.test.parallel.ParallelTestContainer;
-import org.junit.After;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.apache.cayenne.access.event.SnapshotEvent;
+import org.apache.cayenne.test.parallel.ParallelTestContainer;
+import org.junit.After;
+import org.junit.Test;
+import org.mockito.Mockito;
+
 /**
  */
 public class EventBridgeTest {
 
-    private List<DefaultEventManager> managersToClean = new ArrayList<>();
+	public EventBridge mockEventBridge1(EventSubject localSubject, String externalSubject) {
+		CayenneEvent[] mockFieldVariableLastLocalEvent = new CayenneEvent[1];
+		EventBridge mockInstance = Mockito.mock(EventBridge.class, Mockito.withSettings()
+				.useConstructor(localSubject, externalSubject).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				CayenneEvent event = stubInvo.getArgument(0);
+				mockFieldVariableLastLocalEvent[0] = event;
+				return null;
+			}).when(mockInstance).sendExternalEvent(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).shutdownExternal();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).startupExternal();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @After
-    public void cleanEventManagers() {
-        for(DefaultEventManager manager : managersToClean) {
-            manager.shutdown();
-        }
-        managersToClean.clear();
-    }
+	private List<DefaultEventManager> managersToClean = new ArrayList<>();
 
-    @Test
-    public void testConstructor() throws Exception {
-        EventSubject local = EventSubject
-                .getSubject(EventBridgeTest.class, "testInstall");
-        String external = "externalSubject";
-        TestBridge bridge = new TestBridge(local, external);
+	@After
+	public void cleanEventManagers() {
+		for (DefaultEventManager manager : managersToClean) {
+			manager.shutdown();
+		}
+		managersToClean.clear();
+	}
 
-        Collection subjects = bridge.getLocalSubjects();
-        assertEquals(1, subjects.size());
-        assertTrue(subjects.contains(local));
-        assertEquals(external, bridge.getExternalSubject());
-    }
+	@Test
+	public void testConstructor() throws Exception {
+		EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
+		String external = "externalSubject";
+		EventBridge bridge = mockEventBridge1(local, external);
 
-    @Test
-    public void testStartup() throws Exception {
-        EventSubject local = EventSubject
-                .getSubject(EventBridgeTest.class, "testInstall");
-        String external = "externalSubject";
-        TestBridge bridge = new TestBridge(local, external);
+		Collection subjects = bridge.getLocalSubjects();
+		assertEquals(1, subjects.size());
+		assertTrue(subjects.contains(local));
+		assertEquals(external, bridge.getExternalSubject());
+	}
 
-        DefaultEventManager manager = new DefaultEventManager();
-        managersToClean.add(manager);
-        bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
+	@Test
+	public void testStartup() throws Exception {
+		EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
+		String external = "externalSubject";
+		EventBridge bridge = Mockito.mock(EventBridge.class,
+				Mockito.withSettings().useConstructor(local, external).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		CayenneEvent[] bridgeLastLocalEvent = new CayenneEvent[1];
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				CayenneEvent event = stubInvo.getArgument(0);
+				bridgeLastLocalEvent[0] = event;
+				return null;
+			}).when(bridge).sendExternalEvent(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(bridge).shutdownExternal();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(bridge).startupExternal();
+		} catch (Exception exception) {
+		}
 
-        assertSame(manager, bridge.eventManager);
-        assertEquals(1, bridge.startupCalls);
-        assertEquals(0, bridge.shutdownCalls);
+		DefaultEventManager manager = new DefaultEventManager();
+		managersToClean.add(manager);
+		bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
 
-        // try startup again
-        DefaultEventManager newManager = new DefaultEventManager();
-        managersToClean.add(newManager);
-        bridge.startup(newManager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
+		assertSame(manager, bridge.eventManager);
+		Mockito.verify(bridge, Mockito.times(1)).startupExternal();
+		Mockito.verify(bridge, Mockito.times(0)).shutdownExternal();
 
-        assertSame(newManager, bridge.eventManager);
-        assertEquals(2, bridge.startupCalls);
-        assertEquals(1, bridge.shutdownCalls);
-    }
+		// try startup again
+		DefaultEventManager newManager = new DefaultEventManager();
+		managersToClean.add(newManager);
+		bridge.startup(newManager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
 
-    @Test
-    public void testShutdown() throws Exception {
-        EventSubject local = EventSubject
-                .getSubject(EventBridgeTest.class, "testInstall");
-        String external = "externalSubject";
-        TestBridge bridge = new TestBridge(local, external);
+		assertSame(newManager, bridge.eventManager);
+		Mockito.verify(bridge, Mockito.times(2)).startupExternal();
+		Mockito.verify(bridge, Mockito.times(1)).shutdownExternal();
+	}
 
-        DefaultEventManager manager = new DefaultEventManager();
-        managersToClean.add(manager);
-        bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
-        bridge.shutdown();
+	@Test
+	public void testShutdown() throws Exception {
+		EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
+		String external = "externalSubject";
+		EventBridge bridge = Mockito.mock(EventBridge.class,
+				Mockito.withSettings().useConstructor(local, external).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		CayenneEvent[] bridgeLastLocalEvent = new CayenneEvent[1];
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				CayenneEvent event = stubInvo.getArgument(0);
+				bridgeLastLocalEvent[0] = event;
+				return null;
+			}).when(bridge).sendExternalEvent(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(bridge).shutdownExternal();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(bridge).startupExternal();
+		} catch (Exception exception) {
+		}
 
-        assertNull(bridge.eventManager);
-        assertEquals(1, bridge.startupCalls);
-        assertEquals(1, bridge.shutdownCalls);
-    }
+		DefaultEventManager manager = new DefaultEventManager();
+		managersToClean.add(manager);
+		bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
+		bridge.shutdown();
 
-    @Test
-    public void testSendExternalEvent() throws Exception {
+		assertNull(bridge.eventManager);
+		Mockito.verify(bridge, Mockito.times(1)).startupExternal();
+		Mockito.verify(bridge, Mockito.times(1)).shutdownExternal();
+	}
 
-        final EventSubject local = EventSubject.getSubject(
-                EventBridgeTest.class,
-                "testInstall");
-        String external = "externalSubject";
-        final TestBridge bridge = new TestBridge(local, external);
+	@Test
+	public void testSendExternalEvent() throws Exception {
 
-        DefaultEventManager manager = new DefaultEventManager(2);
-        managersToClean.add(manager);
-        bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
+		final EventSubject local = EventSubject.getSubject(EventBridgeTest.class, "testInstall");
+		String external = "externalSubject";
+		final EventBridge bridge = Mockito.mock(EventBridge.class,
+				Mockito.withSettings().useConstructor(local, external).defaultAnswer(Mockito.CALLS_REAL_METHODS));
+		CayenneEvent[] bridgeLastLocalEvent = new CayenneEvent[1];
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				CayenneEvent event = stubInvo.getArgument(0);
+				bridgeLastLocalEvent[0] = event;
+				return null;
+			}).when(bridge).sendExternalEvent(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(bridge).shutdownExternal();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(bridge).startupExternal();
+		} catch (Exception exception) {
+		}
 
-        final SnapshotEvent eventWithNoSubject = new SnapshotEvent(
-                this,
-                this,
-                null,
-                null,
-                null,
-                null);
+		DefaultEventManager manager = new DefaultEventManager(2);
+		managersToClean.add(manager);
+		bridge.startup(manager, EventBridge.RECEIVE_LOCAL_EXTERNAL);
 
-        manager.postEvent(eventWithNoSubject, local);
+		final SnapshotEvent eventWithNoSubject = new SnapshotEvent(this, this, null, null, null, null);
 
-        // check that event was received and that subject was injected...
+		manager.postEvent(eventWithNoSubject, local);
 
-        // since bridge is notified asynchronously by default,
-        // we must wait till notification is received
-        ParallelTestContainer helper = new ParallelTestContainer() {
+		// check that event was received and that subject was injected...
 
-            @Override
-            protected void assertResult() throws Exception {
-                assertTrue(bridge.lastLocalEvent instanceof SnapshotEvent);
-                assertEquals(local, bridge.lastLocalEvent.getSubject());
-            }
-        };
+		// since bridge is notified asynchronously by default,
+		// we must wait till notification is received
+		ParallelTestContainer helper = new ParallelTestContainer() {
 
-        helper.runTest(5000);
+			@Override
+			protected void assertResult() throws Exception {
+				assertTrue(bridgeLastLocalEvent[0] instanceof SnapshotEvent);
+				assertEquals(local, bridgeLastLocalEvent[0].getSubject());
+			}
+		};
 
-        final SnapshotEvent eventWithSubject = new SnapshotEvent(
-                this,
-                this,
-                null,
-                null,
-                null,
-                null);
-        eventWithSubject.setSubject(local);
-        manager.postEvent(eventWithNoSubject, local);
+		helper.runTest(5000);
 
-        // check that event was received and that subject was injected...
+		final SnapshotEvent eventWithSubject = new SnapshotEvent(this, this, null, null, null, null);
+		eventWithSubject.setSubject(local);
+		manager.postEvent(eventWithNoSubject, local);
 
-        // since bridge is notified asynchronously by default,
-        // we must wait till notification is received
-        ParallelTestContainer helper1 = new ParallelTestContainer() {
+		// check that event was received and that subject was injected...
 
-            @Override
-            protected void assertResult() throws Exception {
-                assertTrue(bridge.lastLocalEvent instanceof SnapshotEvent);
-                assertEquals(local, bridge.lastLocalEvent.getSubject());
-            }
-        };
+		// since bridge is notified asynchronously by default,
+		// we must wait till notification is received
+		ParallelTestContainer helper1 = new ParallelTestContainer() {
 
-        helper1.runTest(5000);
-    }
+			@Override
+			protected void assertResult() throws Exception {
+				assertTrue(bridgeLastLocalEvent[0] instanceof SnapshotEvent);
+				assertEquals(local, bridgeLastLocalEvent[0].getSubject());
+			}
+		};
 
-    class TestBridge extends EventBridge {
-
-        CayenneEvent lastLocalEvent;
-        int startupCalls;
-        int shutdownCalls;
-
-        public TestBridge(EventSubject localSubject, String externalSubject) {
-            super(localSubject, externalSubject);
-        }
-
-        @Override
-        public void sendExternalEvent(CayenneEvent event) {
-            lastLocalEvent = event;
-        }
-
-        @Override
-        protected void shutdownExternal() throws Exception {
-            shutdownCalls += 1;
-        }
-
-        @Override
-        protected void startupExternal() throws Exception {
-            startupCalls++;
-        }
-    }
+		helper1.runTest(5000);
+	}
 }

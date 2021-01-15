@@ -32,11 +32,8 @@ import java.util.Map;
 
 import org.apache.cayenne.DataRow;
 import org.apache.cayenne.di.Inject;
-import org.apache.cayenne.map.DataMap;
-import org.apache.cayenne.map.DbEntity;
 import org.apache.cayenne.map.EntityResolver;
 import org.apache.cayenne.map.ObjEntity;
-import org.apache.cayenne.query.MockQueryMetadata;
 import org.apache.cayenne.query.PrefetchTreeNode;
 import org.apache.cayenne.query.QueryMetadata;
 import org.apache.cayenne.reflect.ClassDescriptor;
@@ -47,9 +44,110 @@ import org.apache.cayenne.unit.di.server.CayenneProjects;
 import org.apache.cayenne.unit.di.server.ServerCase;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class PrefetchProcessorTreeBuilderIT extends ServerCase {
+
+	public QueryMetadata mockQueryMetadata2(ClassDescriptor descriptor) {
+		QueryMetadata mockInstance = Mockito.spy(QueryMetadata.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getResultSetMapping();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getPathSplitAliases();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheGroup();
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).isRefreshingObjects();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getProcedure();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getPrefetchTree();
+			Mockito.doAnswer((stubInvo) -> {
+				return -1;
+			}).when(mockInstance).getFetchOffset();
+			Mockito.doAnswer((stubInvo) -> {
+				return mockInstance.getObjEntity().getDbEntity();
+			}).when(mockInstance).getDbEntity();
+			Mockito.doAnswer((stubInvo) -> {
+				return descriptor.getEntity();
+			}).when(mockInstance).getObjEntity();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getOriginatingQuery();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheStrategy();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheKey();
+			Mockito.doAnswer((stubInvo) -> {
+				return mockInstance.getObjEntity().getDataMap();
+			}).when(mockInstance).getDataMap();
+			Mockito.doAnswer((stubInvo) -> {
+				return descriptor;
+			}).when(mockInstance).getClassDescriptor();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
+
+	public QueryMetadata mockQueryMetadata1(ClassDescriptor descriptor) {
+		QueryMetadata mockInstance = Mockito.spy(QueryMetadata.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).isRefreshingObjects();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getResultSetMapping();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getPathSplitAliases();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheGroup();
+			Mockito.doAnswer((stubInvo) -> {
+				return mockInstance.getObjEntity().getDataMap();
+			}).when(mockInstance).getDataMap();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getProcedure();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getPrefetchTree();
+			Mockito.doAnswer((stubInvo) -> {
+				return -1;
+			}).when(mockInstance).getFetchOffset();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getOriginatingQuery();
+			Mockito.doAnswer((stubInvo) -> {
+				return descriptor;
+			}).when(mockInstance).getClassDescriptor();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheStrategy();
+			Mockito.doAnswer((stubInvo) -> {
+				return descriptor.getEntity();
+			}).when(mockInstance).getObjEntity();
+			Mockito.doAnswer((stubInvo) -> {
+				return mockInstance.getObjEntity().getDbEntity();
+			}).when(mockInstance).getDbEntity();
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getCacheKey();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
 	@Inject
 	private DataContext context;
@@ -65,38 +163,7 @@ public class PrefetchProcessorTreeBuilderIT extends ServerCase {
 		dataRows.add(new DataRow(4));
 		dataRows.add(new DataRow(4));
 
-		QueryMetadata metadata = new MockQueryMetadata() {
-
-			@Override
-			public ClassDescriptor getClassDescriptor() {
-				return descriptor;
-			}
-
-			@Override
-			public ObjEntity getObjEntity() {
-				return descriptor.getEntity();
-			}
-
-			@Override
-			public DbEntity getDbEntity() {
-				return getObjEntity().getDbEntity();
-			}
-
-			@Override
-			public DataMap getDataMap() {
-				return getObjEntity().getDataMap();
-			}
-
-			@Override
-			public boolean isRefreshingObjects() {
-				return true;
-			}
-
-			@Override
-			public boolean isResolvingInherited() {
-				return true;
-			}
-		};
+		QueryMetadata metadata = mockQueryMetadata2(descriptor);
 
 		PrefetchTreeNode tree = new PrefetchTreeNode();
 		HierarchicalObjectResolver resolver = new HierarchicalObjectResolver(context, metadata);
@@ -131,38 +198,7 @@ public class PrefetchProcessorTreeBuilderIT extends ServerCase {
 				.setPhantom(false);
 		tree.addPath(Artist.ARTIST_EXHIBIT_ARRAY.getName()).setPhantom(false);
 
-		QueryMetadata metadata = new MockQueryMetadata() {
-
-			@Override
-			public ClassDescriptor getClassDescriptor() {
-				return descriptor;
-			}
-
-			@Override
-			public ObjEntity getObjEntity() {
-				return descriptor.getEntity();
-			}
-
-			@Override
-			public DbEntity getDbEntity() {
-				return getObjEntity().getDbEntity();
-			}
-
-			@Override
-			public DataMap getDataMap() {
-				return getObjEntity().getDataMap();
-			}
-
-			@Override
-			public boolean isRefreshingObjects() {
-				return true;
-			}
-
-			@Override
-			public boolean isResolvingInherited() {
-				return true;
-			}
-		};
+		QueryMetadata metadata = mockQueryMetadata1(descriptor);
 
 		HierarchicalObjectResolver resolver = new HierarchicalObjectResolver(context, metadata);
 		PrefetchProcessorTreeBuilder builder = new PrefetchProcessorTreeBuilder(resolver, mainRows, extraRows);

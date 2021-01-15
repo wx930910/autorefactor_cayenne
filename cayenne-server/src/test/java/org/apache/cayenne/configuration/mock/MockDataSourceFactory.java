@@ -18,16 +18,21 @@
  ****************************************************************/
 package org.apache.cayenne.configuration.mock;
 
-import javax.sql.DataSource;
-
-import org.apache.cayenne.configuration.DataNodeDescriptor;
 import org.apache.cayenne.configuration.server.DataSourceFactory;
+import org.mockito.Mockito;
 
 import com.mockrunner.mock.jdbc.MockDataSource;
 
-public class MockDataSourceFactory implements DataSourceFactory {
+public class MockDataSourceFactory {
 
-    public DataSource getDataSource(DataNodeDescriptor nodeDescriptor) {
-        return new MockDataSource();
-    }
+	static public DataSourceFactory mockDataSourceFactory1() {
+		DataSourceFactory mockInstance = Mockito.spy(DataSourceFactory.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockDataSource();
+			}).when(mockInstance).getDataSource(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

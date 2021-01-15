@@ -20,52 +20,63 @@
 package org.apache.cayenne.access.types;
 
 import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-public class MockExtendedType implements ExtendedType<Object> {
+import org.mockito.Mockito;
 
-    protected Class<?> objectClass;
+public class MockExtendedType {
 
-    public MockExtendedType() {
-        this(Object.class);
-    }
+	static public ExtendedType<Object> mockExtendedType2(Class<?> objectClass) {
+		Class<?>[] mockFieldVariableObjectClass = new Class[1];
+		ExtendedType<Object> mockInstance = Mockito.spy(ExtendedType.class);
+		mockFieldVariableObjectClass[0] = objectClass;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableObjectClass[0].newInstance();
+			}).when(mockInstance).materializeObject(Mockito.any(CallableStatement.class), Mockito.anyInt(),
+					Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableObjectClass[0].newInstance();
+			}).when(mockInstance).materializeObject(Mockito.any(ResultSet.class), Mockito.anyInt(), Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableObjectClass[0].getName();
+			}).when(mockInstance).getClassName();
+			Mockito.doAnswer((stubInvo) -> {
+				Object value = stubInvo.getArgument(0);
+				if (value == null) {
+					return "NULL";
+				}
+				return value.toString();
+			}).when(mockInstance).toString(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    public MockExtendedType(Class<?> objectClass) {
-        this.objectClass = objectClass;
-    }
-
-    @Override
-    public String getClassName() {
-        return objectClass.getName();
-    }
-
-    @Override
-    public void setJdbcObject(
-            PreparedStatement statement,
-            Object value,
-            int pos,
-            int type,
-            int precision) throws Exception {
-    }
-
-    @Override
-    public Object materializeObject(ResultSet rs, int index, int type) throws Exception {
-        return objectClass.newInstance();
-    }
-
-    @Override
-    public Object materializeObject(CallableStatement rs, int index, int type)
-            throws Exception {
-        return objectClass.newInstance();
-    }
-
-    @Override
-    public String toString(Object value) {
-        if (value == null) {
-            return "NULL";
-        }
-
-        return value.toString();
-    }
+	static public ExtendedType<Object> mockExtendedType1() {
+		Class<?>[] mockFieldVariableObjectClass = new Class[1];
+		ExtendedType<Object> mockInstance = Mockito.spy(ExtendedType.class);
+		mockFieldVariableObjectClass[0] = Object.class;
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableObjectClass[0].newInstance();
+			}).when(mockInstance).materializeObject(Mockito.any(CallableStatement.class), Mockito.anyInt(),
+					Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableObjectClass[0].newInstance();
+			}).when(mockInstance).materializeObject(Mockito.any(ResultSet.class), Mockito.anyInt(), Mockito.anyInt());
+			Mockito.doAnswer((stubInvo) -> {
+				return mockFieldVariableObjectClass[0].getName();
+			}).when(mockInstance).getClassName();
+			Mockito.doAnswer((stubInvo) -> {
+				Object value = stubInvo.getArgument(0);
+				if (value == null) {
+					return "NULL";
+				}
+				return value.toString();
+			}).when(mockInstance).toString(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

@@ -19,22 +19,23 @@
 
 package org.apache.cayenne.query;
 
+import org.mockito.Mockito;
 
 /**
  */
-public class MockAbstractQuery extends AbstractQuery {
+public class MockAbstractQuery {
 
-    public MockAbstractQuery() {
-
-    }
-
-    @Override
-    public SQLAction createSQLAction(SQLActionVisitor visitor) {
-        return null;
-    }
-
-    @Override
-    protected BaseQueryMetadata getBaseMetaData() {
-        return null;
-    }
+	static public AbstractQuery mockAbstractQuery1() {
+		AbstractQuery mockInstance = Mockito.spy(AbstractQuery.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).createSQLAction(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return null;
+			}).when(mockInstance).getBaseMetaData();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

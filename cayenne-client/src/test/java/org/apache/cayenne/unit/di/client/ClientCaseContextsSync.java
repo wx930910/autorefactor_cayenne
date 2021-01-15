@@ -36,35 +36,33 @@ import org.junit.Before;
  */
 public class ClientCaseContextsSync extends DICase {
 
-    private static final Injector injector;
+	private static final Injector injector;
 
-    @Inject
-    private DBCleaner dbCleaner;
+	@Inject
+	private DBCleaner dbCleaner;
 
-    static {
-        DefaultScope testScope = new DefaultScope();
-        injector = DIBootstrap.createInjector(
-                new ServerCaseModule(testScope),
-                new ClientCaseModule(testScope),
-                binder -> {
-                    binder.bind(ClientRuntime.class).toProvider(ClientRuntimeProviderContextsSync.class);
-                    binder.bind(ServerRuntime.class).toProvider(ServerRuntimeProviderContextsSync.class);
-                });
+	static {
+		DefaultScope testScope = new DefaultScope();
+		injector = DIBootstrap.createInjector(new ServerCaseModule(testScope), ClientCaseModule.mockModule1(testScope),
+				binder -> {
+					binder.bind(ClientRuntime.class).toProvider(ClientRuntimeProviderContextsSync.class);
+					binder.bind(ServerRuntime.class).toProvider(ServerRuntimeProviderContextsSync.class);
+				});
 
-        injector.getInstance(SchemaBuilder.class).rebuildSchema();
-    }
+		injector.getInstance(SchemaBuilder.class).rebuildSchema();
+	}
 
-    @Before
-    public void cleanUpDB() throws Exception {
-        try {
-            dbCleaner.clean();
-        } catch (Exception ex) {
-            dbCleaner.clean();
-        }
-    }
+	@Before
+	public void cleanUpDB() throws Exception {
+		try {
+			dbCleaner.clean();
+		} catch (Exception ex) {
+			dbCleaner.clean();
+		}
+	}
 
-    @Override
-    protected Injector getUnitTestInjector() {
-        return injector;
-    }
+	@Override
+	protected Injector getUnitTestInjector() {
+		return injector;
+	}
 }

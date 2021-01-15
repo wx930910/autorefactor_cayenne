@@ -19,6 +19,10 @@
 
 package org.apache.cayenne.event;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.cayenne.access.DataDomain;
 import org.apache.cayenne.configuration.Constants;
 import org.apache.cayenne.configuration.DefaultRuntimeProperties;
@@ -27,61 +31,64 @@ import org.apache.cayenne.di.Binder;
 import org.apache.cayenne.di.DIBootstrap;
 import org.apache.cayenne.di.Injector;
 import org.apache.cayenne.di.Module;
-import org.apache.cayenne.log.Slf4jJdbcEventLogger;
 import org.apache.cayenne.log.JdbcEventLogger;
+import org.apache.cayenne.log.Slf4jJdbcEventLogger;
 import org.apache.cayenne.tx.DefaultTransactionFactory;
 import org.apache.cayenne.tx.DefaultTransactionManager;
 import org.apache.cayenne.tx.TransactionFactory;
 import org.apache.cayenne.tx.TransactionManager;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.mockito.Mockito;
 
 public class JMSBridgeProviderTest {
 
-    private static final DataDomain DOMAIN = new DataDomain("test");
-    private static final EventManager EVENT_MANAGER = new DefaultEventManager();
-    protected static final String TOPIC_CONNECTION_FACTORY_TEST = "SomeTopicConnectionFactory";
+	static public Module mockModule1() {
+		Module mockInstance = Mockito.spy(Module.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Binder binder = stubInvo.getArgument(0);
+				binder.bindMap(String.class, Constants.PROPERTIES_MAP);
+				binder.bind(DataDomain.class).toInstance(DOMAIN);
+				binder.bind(EventManager.class).toInstance(EVENT_MANAGER);
+				binder.bind(TransactionManager.class).to(DefaultTransactionManager.class);
+				binder.bind(TransactionFactory.class).to(DefaultTransactionFactory.class);
+				binder.bind(JdbcEventLogger.class).to(Slf4jJdbcEventLogger.class);
+				binder.bind(RuntimeProperties.class).to(DefaultRuntimeProperties.class);
+				return null;
+			}).when(mockInstance).configure(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Test
-    public void testGetJMSBridge() throws Exception {
-        Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new JMSModule());
-        EventBridge bridge = injector.getInstance(EventBridge.class);
+	private static final DataDomain DOMAIN = new DataDomain("test");
+	private static final EventManager EVENT_MANAGER = new DefaultEventManager();
+	protected static final String TOPIC_CONNECTION_FACTORY_TEST = "SomeTopicConnectionFactory";
 
-        assertNotNull(bridge);
-        assertTrue(bridge instanceof JMSBridge);
-    }
+	@Test
+	public void testGetJMSBridge() throws Exception {
+		Injector injector = DIBootstrap.createInjector(JMSBridgeProviderTest.mockModule1(), new JMSModule());
+		EventBridge bridge = injector.getInstance(EventBridge.class);
 
-    @Test
-    public void testUseProperties() {
-        Module module = binder -> JMSModule.contributeTopicConnectionFactory(binder, TOPIC_CONNECTION_FACTORY_TEST);
+		assertNotNull(bridge);
+		assertTrue(bridge instanceof JMSBridge);
+	}
 
-        Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new JMSModule(), module);
-        JMSBridge bridge = (JMSBridge) injector.getInstance(EventBridge.class);
+	@Test
+	public void testUseProperties() {
+		Module module = binder -> JMSModule.contributeTopicConnectionFactory(binder, TOPIC_CONNECTION_FACTORY_TEST);
 
-        assertEquals(TOPIC_CONNECTION_FACTORY_TEST, bridge.getTopicConnectionFactoryName());
-    }
+		Injector injector = DIBootstrap.createInjector(JMSBridgeProviderTest.mockModule1(), new JMSModule(), module);
+		JMSBridge bridge = (JMSBridge) injector.getInstance(EventBridge.class);
 
-    @Test
-    public void testUseDefaultProperties() throws Exception {
-        Injector injector = DIBootstrap.createInjector(new DefaultBindings(), new JMSModule());
-        JMSBridge bridge = (JMSBridge) injector.getInstance(EventBridge.class);
+		assertEquals(TOPIC_CONNECTION_FACTORY_TEST, bridge.getTopicConnectionFactoryName());
+	}
 
-        assertEquals(JMSBridge.TOPIC_CONNECTION_FACTORY_DEFAULT, bridge.getTopicConnectionFactoryName());
-    }
+	@Test
+	public void testUseDefaultProperties() throws Exception {
+		Injector injector = DIBootstrap.createInjector(JMSBridgeProviderTest.mockModule1(), new JMSModule());
+		JMSBridge bridge = (JMSBridge) injector.getInstance(EventBridge.class);
 
-    static class DefaultBindings implements Module {
-        @Override
-        public void configure(Binder binder) {
-            binder.bindMap(String.class, Constants.PROPERTIES_MAP);
-            binder.bind(DataDomain.class).toInstance(DOMAIN);
-            binder.bind(EventManager.class).toInstance(EVENT_MANAGER);
-            binder.bind(TransactionManager.class).to(DefaultTransactionManager.class);
-            binder.bind(TransactionFactory.class).to(DefaultTransactionFactory.class);
-            binder.bind(JdbcEventLogger.class).to(Slf4jJdbcEventLogger.class);
-            binder.bind(RuntimeProperties.class).to(DefaultRuntimeProperties.class);
-        }
-    }
+		assertEquals(JMSBridge.TOPIC_CONNECTION_FACTORY_DEFAULT, bridge.getTopicConnectionFactoryName());
+	}
 }

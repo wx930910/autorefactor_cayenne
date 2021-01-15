@@ -19,6 +19,8 @@
 
 package org.apache.cayenne.project.compatibility;
 
+import static org.mockito.Mockito.mock;
+
 import org.apache.cayenne.configuration.ConfigurationNameMapper;
 import org.apache.cayenne.configuration.DataChannelDescriptorLoader;
 import org.apache.cayenne.configuration.DefaultConfigurationNameMapper;
@@ -37,31 +39,32 @@ import org.apache.cayenne.project.upgrade.handlers.UpgradeHandler_V10;
 import org.apache.cayenne.project.upgrade.handlers.UpgradeHandler_V7;
 import org.apache.cayenne.project.upgrade.handlers.UpgradeHandler_V8;
 import org.apache.cayenne.project.upgrade.handlers.UpgradeHandler_V9;
-
-import static org.mockito.Mockito.mock;
+import org.mockito.Mockito;
 
 /**
  * @since 4.1
  */
-public class CompatibilityTestModule implements Module {
+public class CompatibilityTestModule {
 
-    @Override
-    public void configure(Binder binder) {
-        binder.bind(UpgradeService.class).to(CompatibilityUpgradeService.class);
-        binder.bind(DocumentProvider.class).to(DefaultDocumentProvider.class);
-
-        binder.bind(HandlerFactory.class).to(DefaultHandlerFactory.class);
-        binder.bind(ConfigurationNameMapper.class).to(DefaultConfigurationNameMapper.class);
-        binder.bind(AdhocObjectFactory.class).to(DefaultAdhocObjectFactory.class);
-        binder.bind(ClassLoaderManager.class).to(DefaultClassLoaderManager.class);
-
-        binder.bindList(UpgradeHandler.class)
-                .add(UpgradeHandler_V7.class)
-                .add(UpgradeHandler_V8.class)
-                .add(UpgradeHandler_V9.class)
-                .add(UpgradeHandler_V10.class);
-
-        binder.bind(ProjectSaver.class).toInstance(mock(ProjectSaver.class));
-        binder.bind(DataChannelDescriptorLoader.class).toInstance(mock(DataChannelDescriptorLoader.class));
-    }
+	static public Module mockModule1() {
+		Module mockInstance = Mockito.spy(Module.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Binder binder = stubInvo.getArgument(0);
+				binder.bind(UpgradeService.class).to(CompatibilityUpgradeService.class);
+				binder.bind(DocumentProvider.class).to(DefaultDocumentProvider.class);
+				binder.bind(HandlerFactory.class).to(DefaultHandlerFactory.class);
+				binder.bind(ConfigurationNameMapper.class).to(DefaultConfigurationNameMapper.class);
+				binder.bind(AdhocObjectFactory.class).to(DefaultAdhocObjectFactory.class);
+				binder.bind(ClassLoaderManager.class).to(DefaultClassLoaderManager.class);
+				binder.bindList(UpgradeHandler.class).add(UpgradeHandler_V7.class).add(UpgradeHandler_V8.class)
+						.add(UpgradeHandler_V9.class).add(UpgradeHandler_V10.class);
+				binder.bind(ProjectSaver.class).toInstance(mock(ProjectSaver.class));
+				binder.bind(DataChannelDescriptorLoader.class).toInstance(mock(DataChannelDescriptorLoader.class));
+				return null;
+			}).when(mockInstance).configure(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

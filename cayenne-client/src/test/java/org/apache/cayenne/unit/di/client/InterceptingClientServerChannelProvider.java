@@ -18,21 +18,23 @@
  ****************************************************************/
 package org.apache.cayenne.unit.di.client;
 
-import org.apache.cayenne.ConfigurationException;
 import org.apache.cayenne.DataChannel;
 import org.apache.cayenne.configuration.rop.client.LocalClientServerChannelProvider;
 import org.apache.cayenne.di.Injector;
+import org.mockito.Mockito;
 
-public class InterceptingClientServerChannelProvider extends
-        LocalClientServerChannelProvider {
+public class InterceptingClientServerChannelProvider {
 
-    public InterceptingClientServerChannelProvider(Injector serverInjector) {
-        super(serverInjector);
-    }
-
-    @Override
-    public DataChannel get() throws ConfigurationException {
-        DataChannel clientServerChannel = super.get();
-        return new ClientServerDataChannelDecorator(clientServerChannel);
-    }
+	static public LocalClientServerChannelProvider mockLocalClientServerChannelProvider1(Injector serverInjector) {
+		LocalClientServerChannelProvider mockInstance = Mockito
+				.spy(new LocalClientServerChannelProvider(serverInjector));
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				DataChannel clientServerChannel = (DataChannel) stubInvo.callRealMethod();
+				return new ClientServerDataChannelDecorator(clientServerChannel);
+			}).when(mockInstance).get();
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

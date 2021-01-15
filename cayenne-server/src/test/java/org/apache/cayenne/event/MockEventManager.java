@@ -18,75 +18,16 @@
  ****************************************************************/
 package org.apache.cayenne.event;
 
-import java.util.EventObject;
-import java.util.List;
+import org.mockito.Mockito;
 
-import org.apache.cayenne.event.DefaultEventManager.Dispatch;
+public class MockEventManager {
 
-
-public class MockEventManager implements EventManager {
-
-    public void addListener(
-            Object listener,
-            String methodName,
-            Class<?> eventParameterClass,
-            EventSubject subject) {
-    }
-
-    public void addListener(
-            Object listener,
-            String methodName,
-            Class<?> eventParameterClass,
-            EventSubject subject,
-            Object sender) {
-    }
-
-    public void addNonBlockingListener(
-            Object listener,
-            String methodName,
-            Class<?> eventParameterClass,
-            EventSubject subject) {
-    }
-
-    public void addNonBlockingListener(
-            Object listener,
-            String methodName,
-            Class<?> eventParameterClass,
-            EventSubject subject,
-            Object sender) {
-    }
-
-    public List<Dispatch> getEventQueue() {
-        return null;
-    }
-
-    public boolean isSingleThreaded() {
-        return false;
-    }
-
-    public void postEvent(EventObject event, EventSubject subject) {
-    }
-
-    public void postNonBlockingEvent(EventObject event, EventSubject subject) {
-    }
-
-    public boolean removeAllListeners(EventSubject subject) {
-        return false;
-    }
-
-    public boolean removeListener(Object listener) {
-        return false;
-    }
-
-    public boolean removeListener(Object listener, EventSubject subject) {
-        return false;
-    }
-
-    public boolean removeListener(Object listener, EventSubject subject, Object sender) {
-        return false;
-    }
-
-    public void shutdown() {
-    }
+	static public EventManager mockEventManager1() {
+		EventManager mockInstance = Mockito.spy(EventManager.class);
+		try {
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
 }

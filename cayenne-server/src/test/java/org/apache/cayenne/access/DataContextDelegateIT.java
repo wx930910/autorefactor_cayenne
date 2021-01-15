@@ -19,6 +19,14 @@
 
 package org.apache.cayenne.access;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.query.MockQuery;
 import org.apache.cayenne.query.Query;
@@ -30,132 +38,186 @@ import org.apache.cayenne.unit.di.server.ServerCase;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.mockito.Mockito;
 
 /**
- * Tests various DataContextDelegate methods invocation and consequences on DataContext
- * behavior.
+ * Tests various DataContextDelegate methods invocation and consequences on
+ * DataContext behavior.
  */
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class DataContextDelegateIT extends ServerCase {
 
-    @Inject
-    private DataContext context;
+	public DataContextDelegate mockDataContextDelegate4(List<Query> queriesPerformed) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				queriesPerformed.add(query);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Before
-    public void setUp() throws Exception {
-        // prepare a single gallery record
-        Gallery gallery = (Gallery) context.newObject("Gallery");
-        gallery.setGalleryName("version1");
+	public DataContextDelegate mockDataContextDelegate3(List<Query> queriesPerformed) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				queriesPerformed.add(query);
+				return null;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-        // prepare a single artist record
-        Artist artist = (Artist) context.newObject("Artist");
-        artist.setArtistName("version1");
+	public DataContextDelegate mockDataContextDelegate2(List<Query> queriesPerformed) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				queriesPerformed.add(query);
+				return query;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-        context.commitChanges();
-    }
+	public DataContextDelegate mockDataContextDelegate1(List<Query> queriesPerformed) {
+		DataContextDelegate mockInstance = Mockito.spy(DataContextDelegate.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				return query;
+			}).when(mockInstance).willPerformGenericQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldProcessDelete(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				queriesPerformed.add(query);
+				return null;
+			}).when(mockInstance).willPerformQuery(Mockito.any(), Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return true;
+			}).when(mockInstance).shouldMergeChanges(Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    @Test
-    public void testWillPerformGenericQuery() throws Exception {
+	@Inject
+	private DataContext context;
 
-        final List<Query> queriesPerformed = new ArrayList<Query>(1);
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+	@Before
+	public void setUp() throws Exception {
+		// prepare a single gallery record
+		Gallery gallery = (Gallery) context.newObject("Gallery");
+		gallery.setGalleryName("version1");
 
-            @Override
-            public Query willPerformGenericQuery(DataContext context, Query query) {
-                queriesPerformed.add(query);
-                return query;
-            }
-        };
-        context.setDelegate(delegate);
+		// prepare a single artist record
+		Artist artist = (Artist) context.newObject("Artist");
+		artist.setArtistName("version1");
 
-        // test that delegate is consulted before select
-        MockQuery query = new MockQuery();
-        context.performGenericQuery(query);
+		context.commitChanges();
+	}
 
-        assertTrue("Delegate is not notified of a query being run.", queriesPerformed
-                .contains(query));
-        assertEquals(1, queriesPerformed.size());
-        assertTrue("Delegate unexpectedly blocked the query.", query.isRouteCalled());
-    }
+	@Test
+	public void testWillPerformGenericQuery() throws Exception {
 
-    @Test
-    public void testWillPerformGenericQueryBlocked() throws Exception {
+		final List<Query> queriesPerformed = new ArrayList<Query>(1);
+		DataContextDelegate delegate = mockDataContextDelegate4(queriesPerformed);
+		context.setDelegate(delegate);
 
-        final List<Query> queriesPerformed = new ArrayList<Query>(1);
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+		// test that delegate is consulted before select
+		MockQuery query = new MockQuery();
+		context.performGenericQuery(query);
 
-            @Override
-            public Query willPerformGenericQuery(DataContext context, Query query) {
-                queriesPerformed.add(query);
-                return null;
-            }
-        };
+		assertTrue("Delegate is not notified of a query being run.", queriesPerformed.contains(query));
+		assertEquals(1, queriesPerformed.size());
+		assertTrue("Delegate unexpectedly blocked the query.", query.isRouteCalled());
+	}
 
-        context.setDelegate(delegate);
-        MockQuery query = new MockQuery();
-        context.performGenericQuery(query);
+	@Test
+	public void testWillPerformGenericQueryBlocked() throws Exception {
 
-        assertTrue("Delegate is not notified of a query being run.", queriesPerformed
-                .contains(query));
-        assertEquals(1, queriesPerformed.size());
-        assertFalse("Delegate couldn't block the query.", query.isRouteCalled());
-    }
+		final List<Query> queriesPerformed = new ArrayList<Query>(1);
+		DataContextDelegate delegate = mockDataContextDelegate3(queriesPerformed);
 
-    @Test
-    public void testWillPerformQuery() throws Exception {
+		context.setDelegate(delegate);
+		MockQuery query = new MockQuery();
+		context.performGenericQuery(query);
 
-        final List<Query> queriesPerformed = new ArrayList<Query>(1);
-        DataContextDelegate delegate = new MockDataContextDelegate() {
+		assertTrue("Delegate is not notified of a query being run.", queriesPerformed.contains(query));
+		assertEquals(1, queriesPerformed.size());
+		assertFalse("Delegate couldn't block the query.", query.isRouteCalled());
+	}
 
-            @Override
-            public Query willPerformQuery(DataContext context, Query query) {
-                queriesPerformed.add(query);
-                return query;
-            }
-        };
-        context.setDelegate(delegate);
+	@Test
+	public void testWillPerformQuery() throws Exception {
 
-        // test that delegate is consulted before select
-        SelectQuery query = new SelectQuery(Gallery.class);
-        List<?> results = context.performQuery(query);
+		final List<Query> queriesPerformed = new ArrayList<Query>(1);
+		DataContextDelegate delegate = mockDataContextDelegate2(queriesPerformed);
+		context.setDelegate(delegate);
 
-        assertTrue("Delegate is not notified of a query being run.", queriesPerformed
-                .contains(query));
-        assertEquals(1, queriesPerformed.size());
-        assertNotNull(results);
-    }
+		// test that delegate is consulted before select
+		SelectQuery query = new SelectQuery(Gallery.class);
+		List<?> results = context.performQuery(query);
 
-    @Test
-    public void testWillPerformQueryBlocked() throws Exception {
+		assertTrue("Delegate is not notified of a query being run.", queriesPerformed.contains(query));
+		assertEquals(1, queriesPerformed.size());
+		assertNotNull(results);
+	}
 
-        final List<Query> queriesPerformed = new ArrayList<Query>(1);
-        DataContextDelegate delegate = new MockDataContextDelegate() {
-            @Override
-            public Query willPerformQuery(DataContext context, Query query) {
-                queriesPerformed.add(query);
-                return null;
-            }
-        };
+	@Test
+	public void testWillPerformQueryBlocked() throws Exception {
 
-        context.setDelegate(delegate);
-        SelectQuery query = new SelectQuery(Gallery.class);
-        List<?> results = context.performQuery(query);
+		final List<Query> queriesPerformed = new ArrayList<Query>(1);
+		DataContextDelegate delegate = mockDataContextDelegate1(queriesPerformed);
 
-        assertTrue("Delegate is not notified of a query being run.", queriesPerformed
-                .contains(query));
-        assertEquals(1, queriesPerformed.size());
+		context.setDelegate(delegate);
+		SelectQuery query = new SelectQuery(Gallery.class);
+		List<?> results = context.performQuery(query);
 
-        assertNotNull(results);
+		assertTrue("Delegate is not notified of a query being run.", queriesPerformed.contains(query));
+		assertEquals(1, queriesPerformed.size());
 
-        // blocked
-        assertEquals("Delegate couldn't block the query.", 0, results.size());
-    }
+		assertNotNull(results);
+
+		// blocked
+		assertEquals("Delegate couldn't block the query.", 0, results.size());
+	}
 }

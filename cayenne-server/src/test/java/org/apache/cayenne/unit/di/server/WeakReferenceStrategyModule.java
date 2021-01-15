@@ -23,12 +23,19 @@ import org.apache.cayenne.configuration.Constants;
 import org.apache.cayenne.configuration.server.ServerModule;
 import org.apache.cayenne.di.Binder;
 import org.apache.cayenne.di.Module;
+import org.mockito.Mockito;
 
-public class WeakReferenceStrategyModule implements Module {
-    @Override
-    public void configure(Binder binder) {
-        ServerModule.contributeProperties(binder)
-                //Use in ObjectStoreGCIT
-                .put(Constants.SERVER_OBJECT_RETAIN_STRATEGY_PROPERTY, "weak");
-    }
+public class WeakReferenceStrategyModule {
+	static public Module mockModule1() {
+		Module mockInstance = Mockito.spy(Module.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Binder binder = stubInvo.getArgument(0);
+				ServerModule.contributeProperties(binder).put(Constants.SERVER_OBJECT_RETAIN_STRATEGY_PROPERTY, "weak");
+				return null;
+			}).when(mockInstance).configure(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 }

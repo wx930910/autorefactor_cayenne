@@ -26,6 +26,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.apache.cayenne.ObjectContext;
 import org.apache.cayenne.ResultBatchIterator;
 import org.apache.cayenne.ResultIterator;
 import org.apache.cayenne.ResultIteratorCallback;
+import org.apache.cayenne.access.MockQueryEngine;
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.exp.Expression;
 import org.apache.cayenne.exp.ExpressionFactory;
@@ -56,6 +58,7 @@ import org.apache.cayenne.unit.di.server.ServerCase;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class SelectQueryIT extends ServerCase {
@@ -594,32 +597,47 @@ public class SelectQueryIT extends ServerCase {
 	@Test
 	public void testRouteWithPrefetches() {
 		EntityResolver resolver = context.getEntityResolver();
-		MockQueryRouter router = new MockQueryRouter();
+		QueryRouter router = Mockito.spy(QueryRouter.class);
+		List[] routerQueries = new List[] { new ArrayList() };
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForDataMap(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForName(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				routerQueries[0].add(query);
+				return null;
+			}).when(router).route(Mockito.any(), Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
 
 		SelectQuery<Artist> q = new SelectQuery<>(Artist.class, ExpressionFactory.matchExp("artistName", "a"));
 
 		q.route(router, resolver, null);
-		assertEquals(1, router.getQueryCount());
+		assertEquals(1, routerQueries[0].size());
 
 		q.addPrefetch("paintingArray");
-		router.reset();
+		routerQueries[0] = new ArrayList();
 		q.route(router, resolver, null);
-		assertEquals(2, router.getQueryCount());
+		assertEquals(2, routerQueries[0].size());
 
 		q.addPrefetch("paintingArray.toGallery");
-		router.reset();
+		routerQueries[0] = new ArrayList();
 		q.route(router, resolver, null);
-		assertEquals(3, router.getQueryCount());
+		assertEquals(3, routerQueries[0].size());
 
 		q.addPrefetch("artistExhibitArray.toExhibit");
-		router.reset();
+		routerQueries[0] = new ArrayList();
 		q.route(router, resolver, null);
-		assertEquals(4, router.getQueryCount());
+		assertEquals(4, routerQueries[0].size());
 
 		q.removePrefetch("paintingArray");
-		router.reset();
+		routerQueries[0] = new ArrayList();
 		q.route(router, resolver, null);
-		assertEquals(3, router.getQueryCount());
+		assertEquals(3, routerQueries[0].size());
 	}
 
 	/**
@@ -653,9 +671,24 @@ public class SelectQueryIT extends ServerCase {
 		q.addPrefetch("artistExhibitArray.toExhibit");
 
 		try {
-			MockQueryRouter router = new MockQueryRouter();
+			QueryRouter router = Mockito.spy(QueryRouter.class);
+			List[] routerQueries = new List[] { new ArrayList() };
+			try {
+				Mockito.doAnswer((stubInvo) -> {
+					return new MockQueryEngine();
+				}).when(router).engineForDataMap(Mockito.any());
+				Mockito.doAnswer((stubInvo) -> {
+					return new MockQueryEngine();
+				}).when(router).engineForName(Mockito.any());
+				Mockito.doAnswer((stubInvo) -> {
+					Query query = stubInvo.getArgument(1);
+					routerQueries[0].add(query);
+					return null;
+				}).when(router).route(Mockito.any(), Mockito.any(), Mockito.any());
+			} catch (Exception exception) {
+			}
 			q.route(router, resolver, null);
-			assertEquals(4, router.getQueryCount());
+			assertEquals(4, routerQueries[0].size());
 		} finally {
 			paintingEntity.addRelationship(paintingToArtistRel);
 			galleryEntity.addRelationship(galleryToPaintingRel);
@@ -683,9 +716,24 @@ public class SelectQueryIT extends ServerCase {
 		// block for
 		// a while
 		EntityResolver resolver = context.getEntityResolver();
-		MockQueryRouter router = new MockQueryRouter();
+		QueryRouter router = Mockito.spy(QueryRouter.class);
+		List[] routerQueries = new List[] { new ArrayList() };
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForDataMap(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				return new MockQueryEngine();
+			}).when(router).engineForName(Mockito.any());
+			Mockito.doAnswer((stubInvo) -> {
+				Query query = stubInvo.getArgument(1);
+				routerQueries[0].add(query);
+				return null;
+			}).when(router).route(Mockito.any(), Mockito.any(), Mockito.any());
+		} catch (Exception exception) {
+		}
 		q.route(router, resolver, null);
-		assertEquals(2, router.getQueryCount());
+		assertEquals(2, routerQueries[0].size());
 	}
 
 	@Test

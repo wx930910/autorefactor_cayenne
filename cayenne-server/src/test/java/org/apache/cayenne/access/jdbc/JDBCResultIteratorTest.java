@@ -19,9 +19,16 @@
 
 package org.apache.cayenne.access.jdbc;
 
-import com.mockrunner.mock.jdbc.MockConnection;
-import com.mockrunner.mock.jdbc.MockResultSet;
-import com.mockrunner.mock.jdbc.MockStatement;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
+import java.sql.Connection;
+import java.sql.Statement;
+import java.util.Collections;
+
 import org.apache.cayenne.DataRow;
 import org.apache.cayenne.access.jdbc.reader.DefaultRowReaderFactory;
 import org.apache.cayenne.access.jdbc.reader.RowReader;
@@ -31,15 +38,9 @@ import org.apache.cayenne.map.ObjAttribute;
 import org.apache.cayenne.query.MockQueryMetadata;
 import org.junit.Test;
 
-import java.sql.Connection;
-import java.sql.Statement;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import com.mockrunner.mock.jdbc.MockConnection;
+import com.mockrunner.mock.jdbc.MockResultSet;
+import com.mockrunner.mock.jdbc.MockStatement;
 
 public class JDBCResultIteratorTest {
 
@@ -51,8 +52,9 @@ public class JDBCResultIteratorTest {
 		rs.addColumn("a", new Object[] { "1", "2", "3" });
 
 		RowDescriptor descriptor = new RowDescriptorBuilder().setResultSet(rs).getDescriptor(new ExtendedTypeMap());
-		RowReader<?> rowReader = new DefaultRowReaderFactory().rowReader(descriptor, new MockQueryMetadata(),
-				mock(DbAdapter.class), Collections.<ObjAttribute, ColumnDescriptor> emptyMap());
+		RowReader<?> rowReader = new DefaultRowReaderFactory().rowReader(descriptor,
+				MockQueryMetadata.mockQueryMetadata1(), mock(DbAdapter.class),
+				Collections.<ObjAttribute, ColumnDescriptor>emptyMap());
 
 		JDBCResultIterator it = new JDBCResultIterator(s, rs, rowReader);
 

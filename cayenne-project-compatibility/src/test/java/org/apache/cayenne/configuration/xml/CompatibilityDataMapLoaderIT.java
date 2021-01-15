@@ -19,6 +19,10 @@
 
 package org.apache.cayenne.configuration.xml;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import java.net.URL;
 
 import org.apache.cayenne.configuration.DataMapLoader;
@@ -31,41 +35,34 @@ import org.apache.cayenne.resource.URLResource;
 import org.junit.Test;
 import org.xml.sax.XMLReader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 /**
  * @since 4.1
  */
 public class CompatibilityDataMapLoaderIT {
 
-    @Test
-    public void testLoad() throws Exception {
-        Injector injector = getInjector();
+	@Test
+	public void testLoad() throws Exception {
+		Injector injector = getInjector();
 
-        DataMapLoader loader = injector.getInstance(DataMapLoader.class);
-        assertTrue(loader instanceof CompatibilityDataMapLoader);
+		DataMapLoader loader = injector.getInstance(DataMapLoader.class);
+		assertTrue(loader instanceof CompatibilityDataMapLoader);
 
-        URL resourceUrl = getClass().getResource("../../project/compatibility/test-map-v6.map.xml");
-        Resource resource = new URLResource(resourceUrl);
+		URL resourceUrl = getClass().getResource("../../project/compatibility/test-map-v6.map.xml");
+		Resource resource = new URLResource(resourceUrl);
 
-        DataMap dataMap = loader.load(resource);
-        assertNotNull(dataMap);
-        assertEquals(1, dataMap.getDbEntities().size());
-        assertEquals(1, dataMap.getObjEntities().size());
-        assertNotNull(dataMap.getObjEntity("Artist"));
-        assertNotNull(dataMap.getDbEntity("Artist"));
-        assertEquals(2, dataMap.getDbEntity("Artist").getAttributes().size());
-    }
+		DataMap dataMap = loader.load(resource);
+		assertNotNull(dataMap);
+		assertEquals(1, dataMap.getDbEntities().size());
+		assertEquals(1, dataMap.getObjEntities().size());
+		assertNotNull(dataMap.getObjEntity("Artist"));
+		assertNotNull(dataMap.getDbEntity("Artist"));
+		assertEquals(2, dataMap.getDbEntity("Artist").getAttributes().size());
+	}
 
-    private Injector getInjector() {
-        return DIBootstrap.createInjector(
-                new CompatibilityTestModule(),
-                binder -> {
-                    binder.bind(XMLReader.class).toProviderInstance(new XMLReaderProvider(false)).withoutScope();
-                    binder.bind(DataMapLoader.class).to(CompatibilityDataMapLoader.class);
-                }
-        );
-    }
+	private Injector getInjector() {
+		return DIBootstrap.createInjector(CompatibilityTestModule.mockModule1(), binder -> {
+			binder.bind(XMLReader.class).toProviderInstance(new XMLReaderProvider(false)).withoutScope();
+			binder.bind(DataMapLoader.class).to(CompatibilityDataMapLoader.class);
+		});
+	}
 }

@@ -34,67 +34,59 @@ import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.di.Module;
 import org.apache.cayenne.di.Provider;
 import org.apache.cayenne.unit.UnitDbAdapter;
+import org.mockito.Mockito;
 
 public class ServerRuntimeProvider implements Provider<ServerRuntime> {
 
-    private ServerCaseProperties properties;
-    private ServerCaseDataSourceFactory dataSourceFactory;
-    private UnitDbAdapter unitDbAdapter;
+	public Module mockModule1() {
+		Module mockInstance = Mockito.spy(Module.class);
+		try {
+			Mockito.doAnswer((stubInvo) -> {
+				Binder binder = stubInvo.getArgument(0);
+				binder.bind(DbAdapter.class).toProviderInstance(dbAdapterProvider);
+				binder.bind(DataDomain.class).toProvider(ServerCaseDataDomainProvider.class);
+				binder.bind(DataNodeFactory.class).to(ServerCaseDataNodeFactory.class);
+				binder.bind(UnitDbAdapter.class).toInstance(unitDbAdapter);
+				ServerModule.contributeProperties(binder).put(Constants.SERVER_OBJECT_RETAIN_STRATEGY_PROPERTY, "soft");
+				binder.bind(ServerCaseDataSourceFactory.class).toInstance(dataSourceFactory);
+				return null;
+			}).when(mockInstance).configure(Mockito.any());
+		} catch (Exception exception) {
+		}
+		return mockInstance;
+	}
 
-    private Provider<DbAdapter> dbAdapterProvider;
+	private ServerCaseProperties properties;
+	private ServerCaseDataSourceFactory dataSourceFactory;
+	private UnitDbAdapter unitDbAdapter;
 
-    public ServerRuntimeProvider(@Inject ServerCaseDataSourceFactory dataSourceFactory,
-            @Inject ServerCaseProperties properties,
-            @Inject Provider<DbAdapter> dbAdapterProvider,
-            @Inject UnitDbAdapter unitDbAdapter) {
+	private Provider<DbAdapter> dbAdapterProvider;
 
-        this.dataSourceFactory = dataSourceFactory;
-        this.properties = properties;
-        this.dbAdapterProvider = dbAdapterProvider;
-        this.unitDbAdapter = unitDbAdapter;
-    }
+	public ServerRuntimeProvider(@Inject ServerCaseDataSourceFactory dataSourceFactory,
+			@Inject ServerCaseProperties properties, @Inject Provider<DbAdapter> dbAdapterProvider,
+			@Inject UnitDbAdapter unitDbAdapter) {
 
-    @Override
-    public ServerRuntime get() throws ConfigurationException {
+		this.dataSourceFactory = dataSourceFactory;
+		this.properties = properties;
+		this.dbAdapterProvider = dbAdapterProvider;
+		this.unitDbAdapter = unitDbAdapter;
+	}
 
-        String configurationLocation = properties.getConfigurationLocation();
-        if (configurationLocation == null) {
-            throw new NullPointerException("Null 'configurationLocation', "
-                    + "annotate your test case with @UseServerRuntime");
-        }
+	@Override
+	public ServerRuntime get() throws ConfigurationException {
 
-        Collection<Module> modules = new ArrayList<>(getExtraModules());
+		String configurationLocation = properties.getConfigurationLocation();
+		if (configurationLocation == null) {
+			throw new NullPointerException(
+					"Null 'configurationLocation', " + "annotate your test case with @UseServerRuntime");
+		}
 
-        return ServerRuntime.builder()
-                        .addConfig(configurationLocation)
-                        .addModules(modules)
-                        .build();
-    }
+		Collection<Module> modules = new ArrayList<>(getExtraModules());
 
-    protected Collection<? extends Module> getExtraModules() {
-        return Collections.singleton(new ServerExtraModule());
-    }
+		return ServerRuntime.builder().addConfig(configurationLocation).addModules(modules).build();
+	}
 
-    class ServerExtraModule implements Module {
-
-        @Override
-        public void configure(Binder binder) {
-
-            // these are the objects overriding standard ServerModule definitions or
-            // dependencies needed by such overrides
-
-            binder.bind(DbAdapter.class).toProviderInstance(dbAdapterProvider);
-            binder.bind(DataDomain.class).toProvider(ServerCaseDataDomainProvider.class);
-            binder.bind(DataNodeFactory.class).to(ServerCaseDataNodeFactory.class);
-            binder.bind(UnitDbAdapter.class).toInstance(unitDbAdapter);
-
-            ServerModule.contributeProperties(binder)
-                    // Use soft references instead of default weak.
-                    // Should remove problems with random-failing tests (those that are GC-sensitive).
-                    .put(Constants.SERVER_OBJECT_RETAIN_STRATEGY_PROPERTY, "soft");
-
-            // map DataSources for all test DataNode names
-            binder.bind(ServerCaseDataSourceFactory.class).toInstance(dataSourceFactory);
-        }
-    }
+	protected Collection<? extends Module> getExtraModules() {
+		return Collections.singleton(mockModule1());
+	}
 }

@@ -19,6 +19,10 @@
 
 package org.apache.cayenne.project.compatibility;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 import java.net.URL;
 
 import org.apache.cayenne.di.DIBootstrap;
@@ -29,62 +33,60 @@ import org.apache.cayenne.resource.URLResource;
 import org.junit.Test;
 import org.w3c.dom.Document;
 
-import static org.junit.Assert.*;
-
 /**
  * @since 4.1
  */
 public class CompatibilityUpgradeServiceIT {
 
-    @Test
-    public void testUpgradeFullProjectDom() throws Exception {
-        Injector injector = getInjector();
+	@Test
+	public void testUpgradeFullProjectDom() throws Exception {
+		Injector injector = getInjector();
 
-        CompatibilityUpgradeService upgradeService = (CompatibilityUpgradeService)injector
-                .getInstance(UpgradeService.class);
+		CompatibilityUpgradeService upgradeService = (CompatibilityUpgradeService) injector
+				.getInstance(UpgradeService.class);
 
-        DocumentProvider documentProvider = injector.getInstance(DocumentProvider.class);
+		DocumentProvider documentProvider = injector.getInstance(DocumentProvider.class);
 
-        URL resourceUrl = getClass().getResource("cayenne-project-v6.xml");
-        Resource resource = new URLResource(resourceUrl);
-        upgradeService.upgradeProject(resource);
+		URL resourceUrl = getClass().getResource("cayenne-project-v6.xml");
+		Resource resource = new URLResource(resourceUrl);
+		upgradeService.upgradeProject(resource);
 
-        Document domainDocument = documentProvider.getDocument(resourceUrl);
+		Document domainDocument = documentProvider.getDocument(resourceUrl);
 
-        assertNotNull(domainDocument);
-        assertEquals("10", domainDocument.getDocumentElement().getAttribute("project-version"));
+		assertNotNull(domainDocument);
+		assertEquals("10", domainDocument.getDocumentElement().getAttribute("project-version"));
 
-        URL dataMapUrl = getClass().getResource("test-map-v6.map.xml");
-        Document dataMapDocument = documentProvider.getDocument(dataMapUrl);
-        assertNotNull(dataMapDocument);
-        assertEquals("10", dataMapDocument.getDocumentElement().getAttribute("project-version"));
-        assertEquals(1, dataMapDocument.getElementsByTagName("obj-entity").getLength());
-        assertEquals(1, dataMapDocument.getElementsByTagName("db-entity").getLength());
-        assertEquals(2, dataMapDocument.getElementsByTagName("db-attribute").getLength());
-    }
+		URL dataMapUrl = getClass().getResource("test-map-v6.map.xml");
+		Document dataMapDocument = documentProvider.getDocument(dataMapUrl);
+		assertNotNull(dataMapDocument);
+		assertEquals("10", dataMapDocument.getDocumentElement().getAttribute("project-version"));
+		assertEquals(1, dataMapDocument.getElementsByTagName("obj-entity").getLength());
+		assertEquals(1, dataMapDocument.getElementsByTagName("db-entity").getLength());
+		assertEquals(2, dataMapDocument.getElementsByTagName("db-attribute").getLength());
+	}
 
-    @Test
-    public void testUpgradeStandAloneDataMapDom() throws Exception {
-        Injector injector = getInjector();
+	@Test
+	public void testUpgradeStandAloneDataMapDom() throws Exception {
+		Injector injector = getInjector();
 
-        CompatibilityUpgradeService upgradeService = (CompatibilityUpgradeService)injector
-                .getInstance(UpgradeService.class);
+		CompatibilityUpgradeService upgradeService = (CompatibilityUpgradeService) injector
+				.getInstance(UpgradeService.class);
 
-        DocumentProvider documentProvider = injector.getInstance(DocumentProvider.class);
+		DocumentProvider documentProvider = injector.getInstance(DocumentProvider.class);
 
-        URL dataMapUrl = getClass().getResource("test-map-v6.map.xml");
-        Document dataMapDocument = documentProvider.getDocument(dataMapUrl);
-        assertNull(dataMapDocument);
+		URL dataMapUrl = getClass().getResource("test-map-v6.map.xml");
+		Document dataMapDocument = documentProvider.getDocument(dataMapUrl);
+		assertNull(dataMapDocument);
 
-        Resource resource = new URLResource(dataMapUrl);
-        upgradeService.upgradeDataMap(resource);
+		Resource resource = new URLResource(dataMapUrl);
+		upgradeService.upgradeDataMap(resource);
 
-        dataMapDocument = documentProvider.getDocument(dataMapUrl);
-        assertNotNull(dataMapDocument);
-        assertEquals("10", dataMapDocument.getDocumentElement().getAttribute("project-version"));
-    }
+		dataMapDocument = documentProvider.getDocument(dataMapUrl);
+		assertNotNull(dataMapDocument);
+		assertEquals("10", dataMapDocument.getDocumentElement().getAttribute("project-version"));
+	}
 
-    private Injector getInjector() {
-        return DIBootstrap.createInjector(new CompatibilityTestModule());
-    }
+	private Injector getInjector() {
+		return DIBootstrap.createInjector(CompatibilityTestModule.mockModule1());
+	}
 }
