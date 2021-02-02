@@ -19,12 +19,8 @@
 
 package org.apache.cayenne.access;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.apache.cayenne.DataChannelListener;
 import org.apache.cayenne.di.Inject;
-import org.apache.cayenne.graph.GraphEvent;
 import org.apache.cayenne.test.parallel.ParallelTestContainer;
 import org.apache.cayenne.testdo.testmap.Artist;
 import org.apache.cayenne.unit.di.server.CayenneProjects;
@@ -32,6 +28,7 @@ import org.apache.cayenne.unit.di.server.ServerCaseContextsSync;
 import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.apache.cayenne.util.EventUtil;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * Tests that DataContext sends DataChannel events.
@@ -48,7 +45,7 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 		a.setArtistName("X");
 		context.commitChanges();
 
-		final MockChannelListener listener = new MockChannelListener();
+		final DataChannelListener listener = Mockito.mock(DataChannelListener.class);
 		EventUtil.listenForChannelEvents(context, listener);
 
 		a.setArtistName("Y");
@@ -58,29 +55,10 @@ public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 
 			@Override
 			protected void assertResult() throws Exception {
-				assertFalse(listener.graphCommitted);
-				assertFalse(listener.graphChanged);
-				assertTrue(listener.graphRolledBack);
+				Mockito.verify(listener, Mockito.never()).graphFlushed(Mockito.any());
+				Mockito.verify(listener, Mockito.never()).graphChanged(Mockito.any());
+				Mockito.verify(listener, Mockito.atLeastOnce()).graphRolledback(Mockito.any());
 			}
 		}.runTest(10000);
-	}
-
-	class MockChannelListener implements DataChannelListener {
-
-		boolean graphChanged;
-		boolean graphCommitted;
-		boolean graphRolledBack;
-
-		public void graphChanged(GraphEvent event) {
-			graphChanged = true;
-		}
-
-		public void graphFlushed(GraphEvent event) {
-			graphCommitted = true;
-		}
-
-		public void graphRolledback(GraphEvent event) {
-			graphRolledBack = true;
-		}
 	}
 }
