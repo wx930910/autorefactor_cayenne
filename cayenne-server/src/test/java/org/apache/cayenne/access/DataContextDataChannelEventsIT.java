@@ -19,10 +19,10 @@
 
 package org.apache.cayenne.access;
 
-import org.apache.cayenne.DataChannel;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.cayenne.DataChannelListener;
-import org.apache.cayenne.ObjectContext;
-import org.apache.cayenne.configuration.server.ServerRuntime;
 import org.apache.cayenne.di.Inject;
 import org.apache.cayenne.graph.GraphEvent;
 import org.apache.cayenne.test.parallel.ParallelTestContainer;
@@ -33,168 +33,54 @@ import org.apache.cayenne.unit.di.server.UseServerRuntime;
 import org.apache.cayenne.util.EventUtil;
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 /**
  * Tests that DataContext sends DataChannel events.
  */
 @UseServerRuntime(CayenneProjects.TESTMAP_PROJECT)
 public class DataContextDataChannelEventsIT extends ServerCaseContextsSync {
 
-    @Inject
-    private DataContext context;
+	@Inject
+	private DataContext context;
 
-    @Inject
-    private DataContext peer;
+	@Test
+	public void testRollbackEvent() throws Exception {
+		Artist a = context.newObject(Artist.class);
+		a.setArtistName("X");
+		context.commitChanges();
 
-    @Inject
-    private ServerRuntime runtime;
+		final MockChannelListener listener = new MockChannelListener();
+		EventUtil.listenForChannelEvents(context, listener);
 
-    @Test
-    public void testCommitEvent() throws Exception {
-        Artist a = context.newObject(Artist.class);
-        a.setArtistName("X");
-        context.commitChanges();
+		a.setArtistName("Y");
+		context.rollbackChanges();
 
-        final MockChannelListener listener = new MockChannelListener();
-        EventUtil.listenForChannelEvents(context, listener);
+		new ParallelTestContainer() {
 
-        a.setArtistName("Y");
-        context.commitChanges();
+			@Override
+			protected void assertResult() throws Exception {
+				assertFalse(listener.graphCommitted);
+				assertFalse(listener.graphChanged);
+				assertTrue(listener.graphRolledBack);
+			}
+		}.runTest(10000);
+	}
 
-        new ParallelTestContainer() {
+	class MockChannelListener implements DataChannelListener {
 
-            @Override
-            protected void assertResult() throws Exception {
-                assertTrue(listener.graphCommitted);
-                assertFalse(listener.graphChanged);
-                assertFalse(listener.graphRolledBack);
-            }
-        }.runTest(10000);
+		boolean graphChanged;
+		boolean graphCommitted;
+		boolean graphRolledBack;
 
-    }
+		public void graphChanged(GraphEvent event) {
+			graphChanged = true;
+		}
 
-    @Test
-    public void testRollbackEvent() throws Exception {
-        Artist a = context.newObject(Artist.class);
-        a.setArtistName("X");
-        context.commitChanges();
+		public void graphFlushed(GraphEvent event) {
+			graphCommitted = true;
+		}
 
-        final MockChannelListener listener = new MockChannelListener();
-        EventUtil.listenForChannelEvents(context, listener);
-
-        a.setArtistName("Y");
-        context.rollbackChanges();
-
-        new ParallelTestContainer() {
-
-            @Override
-            protected void assertResult() throws Exception {
-                assertFalse(listener.graphCommitted);
-                assertFalse(listener.graphChanged);
-                assertTrue(listener.graphRolledBack);
-            }
-        }.runTest(10000);
-    }
-
-    @Test
-    public void testChangeEventOnChildChange() throws Exception {
-        Artist a = context.newObject(Artist.class);
-        a.setArtistName("X");
-        context.commitChanges();
-
-        final MockChannelListener listener = new MockChannelListener();
-        EventUtil.listenForChannelEvents(context, listener);
-
-        ObjectContext childContext = runtime.newContext(context);
-
-        Artist a1 = childContext.localObject(a);
-
-        a1.setArtistName("Y");
-        childContext.commitChangesToParent();
-
-        new ParallelTestContainer() {
-
-            @Override
-            protected void assertResult() throws Exception {
-                assertFalse(listener.graphCommitted);
-                assertTrue(listener.graphChanged);
-                assertFalse(listener.graphRolledBack);
-            }
-        }.runTest(10000);
-    }
-
-    @Test
-    public void testChangeEventOnPeerChange() throws Exception {
-        Artist a = context.newObject(Artist.class);
-        a.setArtistName("X");
-        context.commitChanges();
-
-        final MockChannelListener listener = new MockChannelListener();
-        EventUtil.listenForChannelEvents(context, listener);
-
-        Artist a1 = peer.localObject(a);
-
-        a1.setArtistName("Y");
-        peer.commitChangesToParent();
-
-        new ParallelTestContainer() {
-
-            @Override
-            protected void assertResult() throws Exception {
-                assertFalse(listener.graphCommitted);
-                assertTrue(listener.graphChanged);
-                assertFalse(listener.graphRolledBack);
-            }
-        }.runTest(10000);
-    }
-
-    @Test
-    public void testChangeEventOnPeerChangeSecondNestingLevel() throws Exception {
-        ObjectContext childPeer1 = runtime.newContext(context);
-
-        Artist a = childPeer1.newObject(Artist.class);
-        a.setArtistName("X");
-        childPeer1.commitChanges();
-
-        final MockChannelListener listener = new MockChannelListener();
-        EventUtil.listenForChannelEvents((DataChannel) childPeer1, listener);
-
-        ObjectContext childPeer2 = runtime.newContext(context);
-
-        Artist a1 = childPeer2.localObject(a);
-
-        a1.setArtistName("Y");
-        childPeer2.commitChangesToParent();
-
-        new ParallelTestContainer() {
-
-            @Override
-            protected void assertResult() throws Exception {
-                assertFalse(listener.graphCommitted);
-                assertTrue(listener.graphChanged);
-                assertFalse(listener.graphRolledBack);
-            }
-        }.runTest(10000);
-    }
-
-    class MockChannelListener implements DataChannelListener {
-
-        boolean graphChanged;
-        boolean graphCommitted;
-        boolean graphRolledBack;
-
-        public void graphChanged(GraphEvent event) {
-            graphChanged = true;
-        }
-
-        public void graphFlushed(GraphEvent event) {
-            graphCommitted = true;
-        }
-
-        public void graphRolledback(GraphEvent event) {
-            graphRolledBack = true;
-        }
-    }
+		public void graphRolledback(GraphEvent event) {
+			graphRolledBack = true;
+		}
+	}
 }
